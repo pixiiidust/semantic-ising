@@ -114,8 +114,20 @@ def render_simulation_tab(concept: str,
             # Convergence analysis
             st.subheader("🔄 Convergence Analysis")
             
+            # Debug: Show what's available in simulation_results
+            st.write("**Debug Info:**")
+            st.write(f"Simulation results keys: {list(simulation_results.keys())}")
+            
             if 'convergence_data' in simulation_results:
                 convergence_data = simulation_results['convergence_data']
+                st.write(f"Convergence data found: {len(convergence_data)} temperature points")
+                
+                # Show sample convergence data
+                if convergence_data:
+                    sample_data = convergence_data[0]
+                    st.write(f"Sample convergence data keys: {list(sample_data.keys())}")
+                    st.write(f"Sample status: {sample_data.get('status', 'N/A')}")
+                    st.write(f"Sample iterations: {sample_data.get('iterations', 'N/A')}")
                 
                 # Convergence summary
                 col1, col2 = st.columns(2)
@@ -193,6 +205,20 @@ def render_simulation_tab(concept: str,
                             st.dataframe(history_data, use_container_width=True)
             else:
                 st.warning("No convergence data available in simulation results.")
+                st.write("**Expected convergence_data structure:**")
+                st.write("""
+                ```python
+                convergence_data = [
+                    {
+                        'temperature': float,
+                        'convergence_infos': [{'diff_history': [...], 'logged_steps': [...], ...}],
+                        'final_diff': float,
+                        'status': str,  # 'converged', 'plateau', 'diverging', 'max_steps', 'error'
+                        'iterations': int
+                    },
+                    ...
+                ]
+                ```""")
         
         with tab3:
             # Detailed information
