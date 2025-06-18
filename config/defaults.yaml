@@ -1,0 +1,45 @@
+# Semantic Ising Simulator - Default Configuration
+# v0.2 API locked
+
+# Temperature sweep parameters
+temperature_range: [0.1, 3.0]
+temperature_steps: 50
+
+# Default encoder model
+default_encoder: "sentence-transformers/LaBSE"
+
+# Supported languages for multilingual experiments
+supported_languages: ["en", "es", "fr", "de", "it", "pt", "ru", "zh", "ja", "ko"]
+
+# Anchor configuration
+anchor_config:
+  default_anchor_language: "en"
+  include_anchor_default: false
+
+# Vector storage options
+store_all_temperatures: false
+
+# UMAP parameters
+umap_params:
+  n_neighbors: 15
+  min_dist: 0.1
+  n_components: 2
+  random_state: 42
+
+# Simulation parameters (road-tested for 25-lang LaBSE)
+simulation_params:
+  max_iterations: 6000  # Increased from 1000
+  convergence_threshold: 3e-3  # Relaxed from 1e-6
+  energy_coupling: 1.0
+  update_method: "metropolis"  # Options: "metropolis", "glauber"
+  noise_sigma: 0.04  # Reduced from 0.1 to prevent overshooting
+  steps_per_T: 6000  # Increased steps per temperature
+  eps: 0.003  # Relaxed convergence tolerance
+
+# Clustering parameters
+cluster_params:
+  similarity_threshold: 0.8
+  min_cluster_size: 2
+
+# Correlation analysis parameters
+lambda_distance: 0.5  # Exponential decay parameter for linguistic distance weighting 
