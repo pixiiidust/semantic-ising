@@ -717,6 +717,16 @@ def plot_convergence_history(convergence_data: List[Dict[str, Any]], selected_te
     Returns:
         Plotly figure showing convergence history
     """
+    # Debug: Print what we're receiving
+    print(f"DEBUG: plot_convergence_history called with {len(convergence_data)} data points")
+    if convergence_data:
+        print(f"DEBUG: First data point keys: {list(convergence_data[0].keys())}")
+        print(f"DEBUG: First data point status: {convergence_data[0].get('status', 'N/A')}")
+        print(f"DEBUG: First data point iterations: {convergence_data[0].get('iterations', 'N/A')}")
+        print(f"DEBUG: First data point convergence_infos length: {len(convergence_data[0].get('convergence_infos', []))}")
+        if convergence_data[0].get('convergence_infos'):
+            print(f"DEBUG: First conv_info keys: {list(convergence_data[0]['convergence_infos'][0].keys())}")
+    
     fig = go.Figure()
     
     # If a specific temperature is selected, show detailed convergence for that T
@@ -782,6 +792,8 @@ def plot_convergence_history(convergence_data: List[Dict[str, Any]], selected_te
             final_diffs.append(data['final_diff'])
             statuses.append(data['status'])
             iterations.append(data['iterations'])
+        
+        print(f"DEBUG: Summary data - temperatures: {len(temperatures)}, statuses: {statuses[:5]}...")
         
         # Color code by status
         colors = []

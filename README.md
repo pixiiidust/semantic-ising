@@ -140,9 +140,9 @@ The simulator applies statistical physics concepts to semantic analysis:
 
 ### Phase Transition Detection
 
-- **Binder Cumulant Method**: Robust critical temperature detection
-- **Power Law Analysis**: Scale-free clustering at critical point
-- **Correlation Analysis**: Exponential decay of correlations with distance
+- The simulator now detects the critical temperature (Tc) using the log(ξ) derivative method: Tc is identified as the temperature where the correlation length (ξ) collapses (the "knee" in the plot). This is more robust and physically meaningful than previous alignment-based or Binder cumulant methods.
+
+- All UI and analysis now annotate Tc at the knee, matching physical expectations.
 
 ## 📁 Project Structure
 

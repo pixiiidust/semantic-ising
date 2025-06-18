@@ -8,35 +8,47 @@ logger = logging.getLogger(__name__)
 
 def find_critical_temperature(metrics_dict: dict) -> float:
     """
-    Find critical temperature using Binder cumulant method (most robust) with fallback to derivative method
-    
+    Find critical temperature using log(ξ) derivative (knee detection).
+    Falls back to Binder cumulant or alignment derivative if correlation_length is not available.
     Args:
-        metrics_dict: Dictionary containing 'temperatures' and 'alignment' arrays
-                      If 'alignment_ensemble' is available, uses Binder cumulant method
-                      Otherwise falls back to derivative method
-        
+        metrics_dict: Dictionary containing 'temperatures' and 'correlation_length' arrays
     Returns:
         Critical temperature value (Tc) or NaN if insufficient data or no transition
     """
-    alignment = metrics_dict['alignment']
-    temperatures = metrics_dict['temperatures']
-    
-    if len(alignment) < 3:
-        return np.nan
-    
-    # Check for constant alignment (no transition)
-    if np.allclose(alignment, alignment[0]):
-        return np.nan
-    
-    # Try Binder cumulant method if ensemble data is available
-    if 'alignment_ensemble' in metrics_dict and len(metrics_dict['alignment_ensemble']) > 0:
-        try:
-            return _find_critical_temperature_binder(metrics_dict)
-        except Exception as e:
-            logger.warning(f"Binder cumulant method failed: {e}, falling back to derivative method")
-    
-    # Fallback to derivative method
-    return _find_critical_temperature_derivative(metrics_dict)
+    # Prefer correlation_length-based detection
+    if 'correlation_length' in metrics_dict:
+        correlation_length = metrics_dict['correlation_length']
+        temperatures = metrics_dict['temperatures']
+        if len(correlation_length) < 3:
+            return np.nan
+        # Only use finite, positive values
+        mask = np.isfinite(correlation_length) & (correlation_length > 0)
+        temps_valid = np.array(temperatures)[mask]
+        xi_valid = np.array(correlation_length)[mask]
+        if len(xi_valid) < 3:
+            return np.nan
+        # Compute d(log(xi))/dT
+        dlogxi = np.gradient(np.log(xi_valid), temps_valid)
+        tc_idx = np.argmax(np.abs(dlogxi))
+        return float(temps_valid[tc_idx])
+    # Fallback to old methods if correlation_length not present
+    if 'alignment' in metrics_dict:
+        alignment = metrics_dict['alignment']
+        temperatures = metrics_dict['temperatures']
+        if len(alignment) < 3:
+            return np.nan
+        # Check for constant alignment (no transition)
+        if np.allclose(alignment, alignment[0]):
+            return np.nan
+        # Try Binder cumulant method if ensemble data is available
+        if 'alignment_ensemble' in metrics_dict and len(metrics_dict['alignment_ensemble']) > 0:
+            try:
+                return _find_critical_temperature_binder(metrics_dict)
+            except Exception as e:
+                logger.warning(f"Binder cumulant method failed: {e}, falling back to derivative method")
+        # Fallback to derivative method
+        return _find_critical_temperature_derivative(metrics_dict)
+    return np.nan
 
 
 def _find_critical_temperature_binder(metrics_dict: dict) -> float:

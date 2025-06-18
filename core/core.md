@@ -99,7 +99,7 @@ The core modules implement the scientific foundation of the Semantic Ising Simul
 **Purpose**: Critical temperature detection and phase transition analysis
 
 **Key Functions**:
-- `find_critical_temperature(metrics_dict)` - Detect Tc using Binder cumulant
+- `find_critical_temperature(metrics_dict)` - Detect Tc using the log(ξ) derivative (knee in correlation length vs temperature) as the default method. If correlation_length is not available, it falls back to the old methods.
 - `detect_powerlaw_regime(vectors, T, threshold)` - Power law analysis
 
 **Features**:

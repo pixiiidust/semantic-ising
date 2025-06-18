@@ -268,4 +268,8 @@ chmod -R 755 tests/
 - **pytest-cov**: Coverage reporting
 - **pytest-xdist**: Parallel test execution
 - **Test-Driven Development**: Development methodology
-- **Unit Testing**: Software testing methodology 
+- **Unit Testing**: Software testing methodology
+
+## Phase Detection Tests
+- Now includes a test for Tc detection using the log(ξ) derivative (knee detection) with synthetic data.
+- The old alignment-based detection is deprecated and only used as a fallback if correlation_length is not available. 

@@ -100,14 +100,6 @@ return {
     status = "COMPLETE"
   },
   
-  ["tests/test_cli.py"] = {
-    function = "TestCLI",
-    purpose = "Test CLI interface functionality (10 tests)",
-    depends_on = {"main.py"},
-    produces = {"test_results"},
-    status = "COMPLETE"
-  },
-  
   ["tests/tests.md"] = {
     function = "Test documentation",
     purpose = "Document test module structure and coverage",
@@ -343,18 +335,10 @@ return {
   
   -- 10. Phase detection and clustering (Phase 4 - Complete)
   ["core/phase_detection.py"] = {
-    function = "find_critical_temperature",
-    purpose = "Find critical temperature using Binder cumulant method (canonical)",
+    function = "find_critical_temperature, detect_powerlaw_regime",
+    purpose = "find_critical_temperature now uses log(xi) derivative (knee in correlation length) as the default method for Tc detection; alignment-based and Binder cumulant methods are fallback only.",
     depends_on = {"core/dynamics.py", "core/clustering.py"},
     produces = {"critical_temperature"},
-    status = "COMPLETE"
-  },
-  
-  ["core/phase_detection.py"] = {
-    function = "detect_powerlaw_regime",
-    purpose = "Detect power law in cluster size distribution",
-    depends_on = {"core/clustering.py"},
-    produces = {"power_law_metrics"},
     status = "COMPLETE"
   },
   
@@ -482,14 +466,6 @@ return {
   },
   
   -- Test files (Phase 6 - Complete)
-  ["tests/test_integration.py"] = {
-    function = "TestCompletePipeline, TestValidationAgainstKnownResults, TestEdgeCases, TestPerformanceBenchmarks, TestMemoryUsage",
-    purpose = "Integration tests for complete pipeline (19 tests)",
-    depends_on = {"core/simulation.py", "core/phase_detection.py", "core/meta_vector.py"},
-    produces = {"test_results"},
-    status = "COMPLETE"
-  },
-  
   ["tests/test_performance.py"] = {
     function = "TestPerformanceBenchmarks, TestScalability, TestMemoryUsage",
     purpose = "Performance benchmarks and scalability tests (30 tests)",

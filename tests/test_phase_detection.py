@@ -1,3 +1,5 @@
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytest
 import numpy as np
 from unittest.mock import patch
@@ -357,4 +359,22 @@ class TestPhaseDetection:
         # This test case is not provided in the original file or the code block
         # It's assumed to exist as it's called in the original file
         # If the test case is not provided, it should be implemented here
-        pass 
+        pass
+
+    def test_find_critical_temperature_log_xi_derivative(self):
+        """Test Tc detection using log(xi) derivative method with a known knee."""
+        # Synthetic data: correlation length is flat, then drops at T=0.7
+        temperatures = np.linspace(0.3, 0.9, 30)
+        xi = np.ones_like(temperatures) * 100
+        knee_idx = np.searchsorted(temperatures, 0.7)
+        xi[knee_idx:] = 2.0  # Collapse after knee
+        # Add a little noise
+        xi += np.random.normal(0, 0.2, size=xi.shape)
+        metrics = {
+            'temperatures': temperatures,
+            'correlation_length': xi
+        }
+        from core.phase_detection import find_critical_temperature
+        tc = find_critical_temperature(metrics)
+        # Tc should be close to 0.7 (the knee)
+        assert 0.65 <= tc <= 0.75, f"Detected Tc {tc} not in expected knee region [0.65, 0.75]" 
