@@ -134,7 +134,9 @@ def render_simulation_tab(concept: str,
                 
                 with col1:
                     # Summary plot
+                    st.write("**Debug: Creating convergence summary chart...**")
                     fig_summary = plot_convergence_history(convergence_data)
+                    st.write(f"**Debug: Chart created with {len(fig_summary.data)} traces**")
                     st.plotly_chart(fig_summary, use_container_width=True, key="convergence_summary_chart")
                 
                 with col2:
