@@ -85,8 +85,8 @@ streamlit run app.py
 
 ```bash
 # Build and run with Docker
-docker build -t semantic-ising-simulator .
-docker run -p 8501:8501 semantic-ising-simulator
+docker build -t semantic-ising .
+docker run -p 8501:8501 semantic-ising
 ```
 
 ## 🎮 Usage
@@ -153,7 +153,7 @@ The simulator applies statistical physics concepts to semantic analysis:
 ## 📁 Project Structure
 
 ```
-semantic-ising-simulator/
+semantic-ising/
 ├── app.py                 # Main Streamlit application
 ├── main.py               # CLI interface
 ├── config/               # Configuration management
