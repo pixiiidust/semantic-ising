@@ -36,30 +36,48 @@ def render_anchor_comparison_tab(comparison_metrics: Dict[str, float], experimen
     try:
         # Display comparison metrics
         st.subheader("📊 Comparison Metrics")
+        
+        # Primary metric: Cosine Distance (most semantically meaningful)
+        st.metric(
+            "Cosine Distance", 
+            f"{comparison_metrics.get('cosine_distance', 0):.4f}",
+            help="Primary semantic distance metric. Lower values indicate more similar meaning."
+        )
+        
         col1, col2 = st.columns(2)
         
         with col1:
+            # Handle NaN values for set-based metrics
+            procrustes_val = comparison_metrics.get('procrustes_distance', np.nan)
+            procrustes_display = "N/A" if np.isnan(procrustes_val) else f"{procrustes_val:.4f}"
             st.metric(
                 "Procrustes Distance", 
-                f"{comparison_metrics.get('procrustes_distance', 0):.4f}",
-                help="Lower values indicate better structural alignment"
+                procrustes_display,
+                help="Structural alignment (requires multiple vectors). N/A for single vector comparison."
             )
+            
+            cka_val = comparison_metrics.get('cka_similarity', np.nan)
+            cka_display = "N/A" if np.isnan(cka_val) else f"{cka_val:.4f}"
             st.metric(
                 "CKA Similarity", 
-                f"{comparison_metrics.get('cka_similarity', 0):.4f}",
-                help="Higher values (closer to 1.0) indicate stronger similarity"
+                cka_display,
+                help="Representation similarity (requires multiple vectors). N/A for single vector comparison."
             )
         
         with col2:
+            emd_val = comparison_metrics.get('emd_distance', np.nan)
+            emd_display = "N/A" if np.isnan(emd_val) else f"{emd_val:.4f}"
             st.metric(
                 "EMD Distance", 
-                f"{comparison_metrics.get('emd_distance', 0):.4f}",
-                help="Lower values indicate more similar distributions"
+                emd_display,
+                help="Distribution similarity (requires multiple vectors). N/A for single vector comparison."
             )
+            
+            cosine_sim_val = comparison_metrics.get('cosine_similarity', 0)
             st.metric(
                 "Cosine Similarity", 
-                f"{comparison_metrics.get('cosine_similarity', 0):.4f}",
-                help="Higher values indicate more similar vector directions"
+                f"{cosine_sim_val:.4f}",
+                help="Directional similarity. Higher values indicate more similar vector directions."
             )
         
         # Display experiment configuration
@@ -80,12 +98,15 @@ def render_anchor_comparison_tab(comparison_metrics: Dict[str, float], experimen
         # Display detailed analysis
         st.subheader("🔍 Detailed Analysis")
         
-        # Interpretation based on CKA similarity
-        cka_similarity = comparison_metrics.get('cka_similarity', 0)
-        if cka_similarity > 0.7:
+        # Interpretation based on cosine distance (primary metric)
+        cosine_distance = comparison_metrics.get('cosine_distance', 1.0)
+        if cosine_distance < 0.1:
+            st.success("✅ **Very strong semantic similarity detected**")
+            st.write("The anchor language shows very strong alignment with the multilingual semantic structure.")
+        elif cosine_distance < 0.3:
             st.success("✅ **Strong semantic similarity detected**")
             st.write("The anchor language shows strong alignment with the multilingual semantic structure.")
-        elif cka_similarity > 0.4:
+        elif cosine_distance < 0.5:
             st.warning("⚠️ **Moderate semantic similarity**")
             st.write("The anchor language shows moderate alignment with the multilingual semantic structure.")
         else:
@@ -97,14 +118,15 @@ def render_anchor_comparison_tab(comparison_metrics: Dict[str, float], experimen
         col1, col2 = st.columns(2)
         
         with col1:
-            st.write("**Distance Metrics:**")
-            st.write(f"- Procrustes: {comparison_metrics.get('procrustes_distance', 0):.4f}")
-            st.write(f"- EMD: {comparison_metrics.get('emd_distance', 0):.4f}")
+            st.write("**Primary Metric:**")
+            st.write(f"- Cosine Distance: {cosine_distance:.4f}")
+            st.write(f"- Cosine Similarity: {cosine_sim_val:.4f}")
         
         with col2:
-            st.write("**Similarity Metrics:**")
-            st.write(f"- CKA: {comparison_metrics.get('cka_similarity', 0):.4f}")
-            st.write(f"- Cosine: {comparison_metrics.get('cosine_similarity', 0):.4f}")
+            st.write("**Set-based Metrics (N/A for single vector):**")
+            st.write(f"- Procrustes: {procrustes_display}")
+            st.write(f"- CKA: {cka_display}")
+            st.write(f"- EMD: {emd_display}")
         
         # UMAP projection if available
         if hasattr(st.session_state, 'simulation_results') and hasattr(st.session_state, 'analysis_results'):
@@ -127,12 +149,20 @@ def render_anchor_comparison_tab(comparison_metrics: Dict[str, float], experimen
         # Interpretation section
         st.subheader("💡 Interpretation")
         st.write("""
-        **What these metrics tell us:**
+        **Primary Semantic Metric:**
         
-        - **Procrustes Distance**: Measures structural alignment between vector sets. Lower values indicate better alignment.
-        - **CKA Similarity**: Measures representation similarity (0-1 scale). Higher values indicate stronger similarity.
-        - **EMD Distance**: Measures distribution similarity. Lower values indicate more similar distributions.
-        - **Cosine Similarity**: Measures directional similarity. Higher values indicate more similar directions.
+        - **Cosine Distance**: The most appropriate metric for comparing single vectors. Lower values indicate more similar meaning. This is the community standard for semantic similarity in modern embeddings.
+        
+        **Supporting Metrics:**
+        - **Cosine Similarity**: Complementary to cosine distance. Higher values indicate more similar vector directions.
+        
+        **Set-based Metrics (N/A for single vector comparison):**
+        - **Procrustes Distance**: Requires multiple vectors to measure structural alignment.
+        - **CKA Similarity**: Requires multiple vectors to measure representation similarity.
+        - **EMD Distance**: Requires multiple vectors to measure distribution similarity.
+        
+        **Why Cosine Distance?**
+        Cosine distance focuses on semantic content (vector orientation) rather than vector length, making it invariant to common embedding tricks like normalization, temperature scaling, or L2 regularization. It correlates best with human similarity judgments.
         
         **Experimental Design:**
         - **Single-phase mode**: Anchor participates in Ising dynamics

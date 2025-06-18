@@ -224,7 +224,7 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
     """
     Plot full UMAP projection of vectors at Tc (or closest available snapshot).
     If no snapshots, fallback to dynamics_vectors.
-    Highlights anchor language if provided.
+    Highlights anchor language and meta-vector if provided.
     """
     try:
         tc = analysis_results.get('critical_temperature')
@@ -260,14 +260,26 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
         if tc_vectors is None:
             # Nothing to plot
             return go.Figure()
-            
-        # Perform UMAP projection
+        
+        # Compute meta-vector from multilingual set
+        from core.meta_vector import compute_meta_vector
+        meta_result = compute_meta_vector(tc_vectors, method="centroid")
+        meta_vector = meta_result['meta_vector']
+        
+        # Combine vectors for UMAP projection: language vectors + meta-vector
+        all_vectors = np.vstack([tc_vectors, meta_vector.reshape(1, -1)])
+        
+        # Perform UMAP projection on all vectors
         try:
             import umap
             reducer = umap.UMAP(n_components=2, random_state=42, n_neighbors=15, min_dist=0.1)
-            coords = reducer.fit_transform(tc_vectors)
+            coords = reducer.fit_transform(all_vectors)
         except ImportError:
             return go.Figure()
+        
+        # Separate coordinates for language vectors and meta-vector
+        language_coords = coords[:-1]  # All except last
+        meta_coords = coords[-1]       # Last one is meta-vector
             
         # Adjust languages if needed
         if len(languages) != len(tc_vectors):
@@ -281,20 +293,20 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
             f"{code} = {LANGUAGE_NAMES.get(code, 'Unknown')}" for code in languages
         ]
         
-        # Create scatter plot with anchor language highlighting
+        # Create scatter plot with anchor language and meta-vector highlighting
         fig = go.Figure()
         
-        # Separate anchor language from other languages if anchor is included
+        # Plot all language vectors first (excluding anchor if it should be highlighted separately)
         if anchor_language and include_anchor and anchor_language in languages:
             # Find anchor language index
             anchor_idx = languages.index(anchor_language)
             
-            # Plot non-anchor languages first
+            # Plot non-anchor languages
             non_anchor_indices = [i for i in range(len(languages)) if i != anchor_idx]
             if non_anchor_indices:
                 fig.add_trace(go.Scatter(
-                    x=coords[non_anchor_indices, 0],
-                    y=coords[non_anchor_indices, 1],
+                    x=language_coords[non_anchor_indices, 0],
+                    y=language_coords[non_anchor_indices, 1],
                     mode='markers+text',
                     name='Other Languages',
                     text=[languages[i] for i in non_anchor_indices],
@@ -308,10 +320,10 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
                     hovertemplate='<b>%{text}</b><br>%{customdata}<br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
                 ))
             
-            # Plot anchor language with highlighting
+            # Plot anchor language with red circle highlighting
             fig.add_trace(go.Scatter(
-                x=[coords[anchor_idx, 0]],
-                y=[coords[anchor_idx, 1]],
+                x=[language_coords[anchor_idx, 0]],
+                y=[language_coords[anchor_idx, 1]],
                 mode='markers+text',
                 name=f'Anchor ({anchor_language})',
                 text=[anchor_language],
@@ -320,7 +332,7 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
                     size=15,
                     color='#FF6B6B',
                     line=dict(width=2, color='white'),
-                    symbol='star'
+                    symbol='circle'
                 ),
                 customdata=[hover_texts[anchor_idx]],
                 hovertemplate=f'<b>{anchor_language} (Anchor)</b><br>%{{customdata}}<br>x: %{{x:.3f}}<br>y: %{{y:.3f}}<extra></extra>'
@@ -328,8 +340,8 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
         else:
             # Plot all languages normally (no anchor highlighting)
             fig.add_trace(go.Scatter(
-                x=coords[:, 0],
-                y=coords[:, 1],
+                x=language_coords[:, 0],
+                y=language_coords[:, 1],
                 mode='markers+text',
                 name='Languages',
                 text=languages,
@@ -343,6 +355,24 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
                 hovertemplate='<b>%{text}</b><br>%{customdata}<br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
             ))
         
+        # Always plot meta-vector as red circle
+        fig.add_trace(go.Scatter(
+            x=[meta_coords[0]],
+            y=[meta_coords[1]],
+            mode='markers+text',
+            name='Meta-Vector',
+            text=['Meta'],
+            textposition="top center",
+            marker=dict(
+                size=15,
+                color='#FF6B6B',
+                line=dict(width=2, color='white'),
+                symbol='circle'
+            ),
+            customdata=['Meta-Vector (centroid of multilingual set)'],
+            hovertemplate='<b>Meta-Vector</b><br>Centroid of multilingual set<br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
+        ))
+        
         # Update layout with appropriate title
         if interpolation_used:
             title = f"UMAP Projection at T = {used_temp:.3f} (interpolated)"
@@ -353,7 +383,9 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
         
         # Add anchor language info to title if applicable
         if anchor_language and include_anchor:
-            title += f" - {anchor_language} highlighted"
+            title += f" - {anchor_language} and Meta-Vector highlighted"
+        else:
+            title += " - Meta-Vector highlighted"
         if warning_msg:
             title += f"<br>{warning_msg}"
         

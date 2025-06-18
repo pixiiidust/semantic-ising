@@ -3,6 +3,9 @@ from typing import Dict
 from scipy.spatial import procrustes
 from scipy.stats import wasserstein_distance, entropy
 
+# Import meta_vector computation
+from .meta_vector import compute_meta_vector
+
 def compute_procrustes_distance(vectors_a: np.ndarray, vectors_b: np.ndarray) -> float:
     """Compute Procrustes distance between two sets of vectors."""
     if vectors_a.shape != vectors_b.shape:
@@ -72,31 +75,40 @@ def compare_anchor_to_multilingual(anchor_vectors: np.ndarray, multilingual_vect
     else:
         tc_vectors = multilingual_vectors
     
-    # Handle different shapes by using the smaller set for comparison
-    min_vectors = min(len(anchor_vectors), len(tc_vectors))
-    anchor_subset = anchor_vectors[:min_vectors]
-    tc_subset = tc_vectors[:min_vectors]
+    # Compute meta-vector from multilingual set at Tc
+    meta_result = compute_meta_vector(tc_vectors, method="centroid")
+    multilingual_meta_vector = meta_result['meta_vector']
     
-    # Handle single vector case (edge case)
-    if min_vectors == 1:
-        # For single vectors, use cosine similarity and set other metrics to reasonable defaults
-        cosine_sim = np.dot(anchor_subset[0], tc_subset[0]) / (np.linalg.norm(anchor_subset[0]) * np.linalg.norm(tc_subset[0]))
-        return {
-            'procrustes_distance': 1.0 - abs(cosine_sim),  # Approximate for single vectors
-            'cka_similarity': abs(cosine_sim),  # Approximate for single vectors
-            'emd_distance': compute_emd_distance(anchor_subset, tc_subset),
-            'kl_divergence': compute_kl_divergence(anchor_subset, tc_subset),
-            'cosine_similarity': cosine_sim
-        }
+    # Handle multiple anchor vectors by computing their meta-vector too
+    if len(anchor_vectors) > 1:
+        anchor_meta_result = compute_meta_vector(anchor_vectors, method="centroid")
+        anchor_vector = anchor_meta_result['meta_vector']
+    else:
+        # Single anchor vector
+        anchor_vector = anchor_vectors[0]
     
-    # Compute all comparison metrics for multiple vectors
+    # Normalize vectors for cosine distance computation
+    anchor_norm = np.linalg.norm(anchor_vector)
+    meta_norm = np.linalg.norm(multilingual_meta_vector)
+    
+    if anchor_norm == 0 or meta_norm == 0:
+        # Handle zero vectors
+        cosine_similarity = 0.0
+        cosine_distance = 1.0
+    else:
+        # Compute cosine similarity and distance
+        cosine_similarity = np.dot(anchor_vector, multilingual_meta_vector) / (anchor_norm * meta_norm)
+        cosine_distance = 1.0 - cosine_similarity
+    
+    # For single vector comparison, use cosine distance as primary metric
+    # Set other metrics to NaN since they're designed for vector sets
     comparison = {
-        'procrustes_distance': compute_procrustes_distance(anchor_subset, tc_subset),
-        'cka_similarity': compute_cka_similarity(anchor_subset, tc_subset),
-        'emd_distance': compute_emd_distance(anchor_subset, tc_subset),
-        'kl_divergence': compute_kl_divergence(anchor_subset, tc_subset),
-        'cosine_similarity': np.mean([np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)) 
-                                    for a, b in zip(anchor_subset, tc_subset)])
+        'procrustes_distance': np.nan,  # Requires multiple points
+        'cka_similarity': np.nan,       # Requires multiple points  
+        'emd_distance': np.nan,         # Requires multiple points
+        'kl_divergence': np.nan,        # Requires multiple points
+        'cosine_similarity': cosine_similarity,
+        'cosine_distance': cosine_distance  # Primary semantic distance metric
     }
     
     return comparison 

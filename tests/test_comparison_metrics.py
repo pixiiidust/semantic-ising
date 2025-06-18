@@ -14,6 +14,7 @@ import numpy as np
 from typing import Dict
 import tempfile
 import os
+from unittest.mock import patch
 
 # Import functions to test (these will be implemented in core/comparison_metrics.py)
 try:
@@ -247,12 +248,20 @@ class TestComparisonMetrics:
         comparison = compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, self.metrics)
         
         # Should return dictionary with all comparison metrics
-        expected_keys = ['procrustes_distance', 'cka_similarity', 'emd_distance', 'kl_divergence', 'cosine_similarity']
+        expected_keys = ['procrustes_distance', 'cka_similarity', 'emd_distance', 'kl_divergence', 'cosine_similarity', 'cosine_distance']
         for key in expected_keys:
             assert key in comparison
             assert isinstance(comparison[key], float)
-            assert not np.isnan(comparison[key])
-            assert not np.isinf(comparison[key])
+        
+        # Cosine metrics should be valid numbers
+        assert not np.isnan(comparison['cosine_similarity'])
+        assert not np.isnan(comparison['cosine_distance'])
+        
+        # Set-based metrics should be NaN for single vector comparison
+        assert np.isnan(comparison['procrustes_distance'])
+        assert np.isnan(comparison['cka_similarity'])
+        assert np.isnan(comparison['emd_distance'])
+        assert np.isnan(comparison['kl_divergence'])
     
     def test_compare_anchor_to_multilingual_identical_vectors(self):
         """Test anchor comparison with identical vectors."""
@@ -263,12 +272,15 @@ class TestComparisonMetrics:
         
         comparison = compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, self.metrics)
         
-        # Identical vectors should show high similarity
-        assert comparison['procrustes_distance'] == pytest.approx(0.0, abs=1e-6)
-        assert comparison['cka_similarity'] == pytest.approx(1.0, abs=1e-6)
-        assert comparison['emd_distance'] == pytest.approx(0.0, abs=1e-6)
-        assert comparison['kl_divergence'] == pytest.approx(0.0, abs=1e-6)
+        # Identical vectors should show perfect cosine similarity
         assert comparison['cosine_similarity'] == pytest.approx(1.0, abs=1e-6)
+        assert comparison['cosine_distance'] == pytest.approx(0.0, abs=1e-6)
+        
+        # Set-based metrics should be NaN for single vector comparison
+        assert np.isnan(comparison['procrustes_distance'])
+        assert np.isnan(comparison['cka_similarity'])
+        assert np.isnan(comparison['emd_distance'])
+        assert np.isnan(comparison['kl_divergence'])
     
     def test_compare_anchor_to_multilingual_different_vectors(self):
         """Test anchor comparison with different vectors."""
@@ -278,12 +290,15 @@ class TestComparisonMetrics:
         
         comparison = compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, self.metrics)
         
-        # Different vectors should show lower similarity
-        assert comparison['procrustes_distance'] > 0.0
-        assert comparison['cka_similarity'] < 1.0
-        assert comparison['emd_distance'] > 0.0
-        assert comparison['kl_divergence'] > 0.0
+        # Different vectors should show lower cosine similarity
         assert comparison['cosine_similarity'] < 1.0
+        assert comparison['cosine_distance'] > 0.0
+        
+        # Set-based metrics should be NaN for single vector comparison
+        assert np.isnan(comparison['procrustes_distance'])
+        assert np.isnan(comparison['cka_similarity'])
+        assert np.isnan(comparison['emd_distance'])
+        assert np.isnan(comparison['kl_divergence'])
     
     def test_compare_anchor_to_multilingual_edge_cases(self):
         """Test anchor comparison with edge cases."""
@@ -295,10 +310,20 @@ class TestComparisonMetrics:
         comparison = compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, self.metrics)
         
         # Should handle single vectors gracefully
-        expected_keys = ['procrustes_distance', 'cka_similarity', 'emd_distance', 'kl_divergence', 'cosine_similarity']
+        expected_keys = ['procrustes_distance', 'cka_similarity', 'emd_distance', 'kl_divergence', 'cosine_similarity', 'cosine_distance']
         for key in expected_keys:
             assert key in comparison
             assert isinstance(comparison[key], float)
+        
+        # Cosine metrics should be valid
+        assert not np.isnan(comparison['cosine_similarity'])
+        assert not np.isnan(comparison['cosine_distance'])
+        
+        # Set-based metrics should be NaN
+        assert np.isnan(comparison['procrustes_distance'])
+        assert np.isnan(comparison['cka_similarity'])
+        assert np.isnan(comparison['emd_distance'])
+        assert np.isnan(comparison['kl_divergence'])
     
     def test_compare_anchor_to_multilingual_invalid_tc(self):
         """Test anchor comparison with invalid critical temperature."""
@@ -309,7 +334,7 @@ class TestComparisonMetrics:
         comparison = compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, self.metrics)
         
         # Should handle invalid Tc gracefully by using closest available temperature
-        expected_keys = ['procrustes_distance', 'cka_similarity', 'emd_distance', 'kl_divergence', 'cosine_similarity']
+        expected_keys = ['procrustes_distance', 'cka_similarity', 'emd_distance', 'kl_divergence', 'cosine_similarity', 'cosine_distance']
         for key in expected_keys:
             assert key in comparison
             assert isinstance(comparison[key], float)
@@ -335,12 +360,15 @@ class TestComparisonMetrics:
         
         comparison = compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, self.metrics)
         
-        # All similarity metrics should indicate perfect similarity
-        assert comparison['procrustes_distance'] == pytest.approx(0.0, abs=1e-6)
-        assert comparison['cka_similarity'] == pytest.approx(1.0, abs=1e-6)
-        assert comparison['emd_distance'] == pytest.approx(0.0, abs=1e-6)
-        assert comparison['kl_divergence'] == pytest.approx(0.0, abs=1e-6)
+        # Cosine similarity should indicate perfect similarity for identical inputs
         assert comparison['cosine_similarity'] == pytest.approx(1.0, abs=1e-6)
+        assert comparison['cosine_distance'] == pytest.approx(0.0, abs=1e-6)
+        
+        # Set-based metrics should be NaN for single vector comparison
+        assert np.isnan(comparison['procrustes_distance'])
+        assert np.isnan(comparison['cka_similarity'])
+        assert np.isnan(comparison['emd_distance'])
+        assert np.isnan(comparison['kl_divergence'])
     
     def test_integration_metric_ranges(self):
         """Integration test: verify all metrics are in expected ranges."""
@@ -350,12 +378,59 @@ class TestComparisonMetrics:
         
         comparison = compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, self.metrics)
         
-        # Verify metric ranges
-        assert 0.0 <= comparison['procrustes_distance'] <= 10.0  # Reasonable upper bound
-        assert 0.0 <= comparison['cka_similarity'] <= 1.0
-        assert 0.0 <= comparison['emd_distance'] <= 100.0  # Reasonable upper bound
-        assert 0.0 <= comparison['kl_divergence'] <= 100.0  # Reasonable upper bound
+        # Verify cosine similarity range
         assert -1.0 <= comparison['cosine_similarity'] <= 1.0
+        assert 0.0 <= comparison['cosine_distance'] <= 2.0  # Distance can be 0 to 2
+        
+        # Set-based metrics should be NaN for single vector comparison
+        assert np.isnan(comparison['procrustes_distance'])
+        assert np.isnan(comparison['cka_similarity'])
+        assert np.isnan(comparison['emd_distance'])
+        assert np.isnan(comparison['kl_divergence'])
+    
+    def test_compare_anchor_to_multilingual_meta_vector_comparison(self):
+        """Test that anchor comparison uses meta-vector of multilingual set, not individual vectors."""
+        # Create test data: anchor vector and multilingual vectors
+        anchor_vectors = np.random.randn(1, 768)  # Single anchor vector
+        multilingual_vectors = np.random.randn(5, 768)  # 5 multilingual vectors
+        tc = 1.5
+        metrics = {
+            'temperatures': np.array([1.0, 1.5, 2.0]),
+            'alignment': np.array([0.8, 0.5, 0.2]),
+            'entropy': np.array([0.2, 0.5, 0.8]),
+            'energy': np.array([-0.8, -0.5, -0.2]),
+            'correlation_length': np.array([0.1, 0.5, 0.9])
+        }
+        
+        # Mock the meta_vector computation to verify it's called
+        with patch('core.comparison_metrics.compute_meta_vector') as mock_meta:
+            # Mock meta-vector computation
+            mock_meta.return_value = {
+                'meta_vector': np.random.randn(768),
+                'method': 'centroid'
+            }
+            
+            comparison = compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, metrics)
+            
+            # Verify that compute_meta_vector was called with multilingual vectors
+            mock_meta.assert_called_once_with(multilingual_vectors, method="centroid")
+            
+            # Verify comparison metrics are computed correctly for single vector comparison
+            assert 'cosine_similarity' in comparison
+            assert 'cosine_distance' in comparison
+            assert isinstance(comparison['cosine_similarity'], float)
+            assert isinstance(comparison['cosine_distance'], float)
+            assert not np.isnan(comparison['cosine_similarity'])
+            assert not np.isnan(comparison['cosine_distance'])
+            
+            # Verify that metrics requiring multiple vectors are set to NaN
+            assert np.isnan(comparison['procrustes_distance'])
+            assert np.isnan(comparison['cka_similarity'])
+            assert np.isnan(comparison['emd_distance'])
+            assert np.isnan(comparison['kl_divergence'])
+            
+            # Verify cosine distance is the complement of cosine similarity
+            assert abs(comparison['cosine_distance'] - (1.0 - comparison['cosine_similarity'])) < 1e-10
 
 
 if __name__ == "__main__":
