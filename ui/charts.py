@@ -500,8 +500,8 @@ def plot_alignment_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figu
         ))
         
         # Add critical temperature marker if available
-        if hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
-            tc = st.session_state.critical_temperature
+        if 'critical_temperature' in simulation_results:
+            tc = simulation_results['critical_temperature']
             fig.add_vline(
                 x=tc,
                 line_dash="dash",
