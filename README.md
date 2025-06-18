@@ -17,7 +17,8 @@
 
 ## 🎯 Overview
 
-This simulator investigates the **Platonic representation hypothesis**: do words meaning "dog" in 70+ languages share a common latent semantic structure? Using Ising model dynamics, we simulate semantic phase transitions and detect critical temperatures where universal semantic patterns emerge.
+* This simulator is inspired by the **Platonic representation hypothesis**: do words meaning "dog" in 70+ languages share a common latent semantic structure? 
+* Using Ising model dynamics, we simulate semantic phase transitions and detect critical temperatures where universal semantic patterns emerge.
 
 **Key Questions:**
 - Do semantically identical words across languages converge in embedding space?
