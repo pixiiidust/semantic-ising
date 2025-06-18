@@ -103,13 +103,21 @@ python main.py --config my_experiment.yaml
 
 ### Experimental Designs
 
-**Single-Phase Mode** (include_anchor=True):
-- Anchor language participates in Ising dynamics
-- Tests: "Does English share semantic space with other languages?"
+Two modes to study multilingual semantic structure:
 
-**Two-Phase Mode** (include_anchor=False):
-- Anchor language compared to emergent multilingual structure
-- Tests: "How does English compare to multilingual semantic dynamics?"
+#### 🔬 **Single-Phase Mode** (`include_anchor=True`)
+**Question**: "Does the anchor language share semantic space with other languages?"
+- Anchor participates in Ising dynamics with all languages
+- **Use when**: You want to see how anchor influences collective dynamics
+
+#### 🔬 **Two-Phase Mode** (`include_anchor=False`)
+**Question**: "How does the anchor compare to the emergent multilingual structure?"
+- Anchor excluded from dynamics, compared to result at critical temperature
+- **Use when**: You want to test anchor alignment with emergent structure
+
+#### 📊 **Key Differences**
+- **Single-Phase**: Higher Tc, anchor visible in UMAP
+- **Two-Phase**: Lower Tc, anchor highlighted separately in UMAP
 
 ## 🧠 Scientific Background
 
