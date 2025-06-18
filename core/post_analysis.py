@@ -395,7 +395,7 @@ def validate_analysis_inputs(
     for metric in required_metrics:
         if metric not in metrics:
             raise ValueError(f"Missing required metric: {metric}")
-    
+        
     # Filter out NaN values and ensure we have valid data
     temperatures = metrics['temperatures']
     alignment = metrics['alignment']
@@ -408,7 +408,7 @@ def validate_analysis_inputs(
             "All temperature points were diverging or invalid. "
             "Try lowering T_max or increasing MC steps."
         )
-    
+        
     # Check if we have enough valid points for analysis
     n_valid = np.sum(valid_mask)
     if n_valid < 3:

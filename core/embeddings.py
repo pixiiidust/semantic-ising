@@ -36,6 +36,7 @@ def load_concept_embeddings(concept_name: str, filename: str = None) -> Dict[str
     else:
         # Fallback to the old pattern
         filepath = f"data/concepts/{concept_name}_translations.json"
+        print(f"Using fallback filepath: {filepath}")
     
     try:
         with open(filepath, 'r', encoding='utf-8') as f:

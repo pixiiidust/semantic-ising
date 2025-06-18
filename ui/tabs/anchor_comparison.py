@@ -34,99 +34,37 @@ def render_anchor_comparison_tab(comparison_metrics: Dict[str, float], experimen
         return
     
     try:
-        # Display comparison metrics
-        st.subheader("📊 Comparison Metrics")
-        
-        # Primary metric: Cosine Distance (most semantically meaningful)
-        st.metric(
-            "Cosine Distance", 
-            f"{comparison_metrics.get('cosine_distance', 0):.4f}",
-            help="Primary semantic distance metric. Lower values indicate more similar meaning."
-        )
-        
+        # Display main metrics concisely
         col1, col2 = st.columns(2)
-        
         with col1:
-            # Handle NaN values for set-based metrics
-            procrustes_val = comparison_metrics.get('procrustes_distance', np.nan)
-            procrustes_display = "N/A" if np.isnan(procrustes_val) else f"{procrustes_val:.4f}"
-            st.metric(
-                "Procrustes Distance", 
-                procrustes_display,
-                help="Structural alignment (requires multiple vectors). N/A for single vector comparison."
-            )
-            
-            cka_val = comparison_metrics.get('cka_similarity', np.nan)
-            cka_display = "N/A" if np.isnan(cka_val) else f"{cka_val:.4f}"
-            st.metric(
-                "CKA Similarity", 
-                cka_display,
-                help="Representation similarity (requires multiple vectors). N/A for single vector comparison."
-            )
-        
+            st.metric("Cosine Distance", f"{comparison_metrics['cosine_distance']:.4f}", help="Primary semantic distance metric (0-1, lower is better)")
         with col2:
-            emd_val = comparison_metrics.get('emd_distance', np.nan)
-            emd_display = "N/A" if np.isnan(emd_val) else f"{emd_val:.4f}"
-            st.metric(
-                "EMD Distance", 
-                emd_display,
-                help="Distribution similarity (requires multiple vectors). N/A for single vector comparison."
-            )
-            
-            cosine_sim_val = comparison_metrics.get('cosine_similarity', 0)
-            st.metric(
-                "Cosine Similarity", 
-                f"{cosine_sim_val:.4f}",
-                help="Directional similarity. Higher values indicate more similar vector directions."
-            )
+            st.metric("Cosine Similarity", f"{comparison_metrics['cosine_similarity']:.4f}", help="Directional similarity (0-1, higher is better)")
         
-        # Display experiment configuration
-        st.subheader("⚙️ Experiment Configuration")
-        if experiment_config:
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.write(f"**Anchor Language:** {experiment_config.get('anchor_language', 'Unknown')}")
-                st.write(f"**Include Anchor:** {'Yes' if experiment_config.get('include_anchor', False) else 'No'}")
-            
-            with col2:
-                dynamics_langs = experiment_config.get('dynamics_languages', [])
-                st.write(f"**Dynamics Languages:** {len(dynamics_langs)} languages")
-                if dynamics_langs:
-                    st.write(f"Languages: {', '.join(dynamics_langs[:5])}{'...' if len(dynamics_langs) > 5 else ''}")
+        # Experiment configuration in expander
+        with st.expander("⚙️ Experiment Configuration", expanded=False):
+            if experiment_config:
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write(f"**Anchor Language:** {experiment_config.get('anchor_language', 'Unknown')}")
+                    st.write(f"**Include Anchor:** {'Yes' if experiment_config.get('include_anchor', False) else 'No'}")
+                
+                with col2:
+                    dynamics_langs = experiment_config.get('dynamics_languages', [])
+                    st.write(f"**Dynamics Languages:** {len(dynamics_langs)} languages")
+                    if dynamics_langs:
+                        st.write(f"Languages: {', '.join(dynamics_langs[:5])}{'...' if len(dynamics_langs) > 5 else ''}")
         
-        # Display detailed analysis
-        st.subheader("🔍 Detailed Analysis")
-        
-        # Interpretation based on cosine distance (primary metric)
-        cosine_distance = comparison_metrics.get('cosine_distance', 1.0)
-        if cosine_distance < 0.1:
-            st.success("✅ **Very strong semantic similarity detected**")
-            st.write("The anchor language shows very strong alignment with the multilingual semantic structure.")
-        elif cosine_distance < 0.3:
-            st.success("✅ **Strong semantic similarity detected**")
-            st.write("The anchor language shows strong alignment with the multilingual semantic structure.")
-        elif cosine_distance < 0.5:
-            st.warning("⚠️ **Moderate semantic similarity**")
-            st.write("The anchor language shows moderate alignment with the multilingual semantic structure.")
-        else:
-            st.error("❌ **Weak semantic similarity**")
-            st.write("The anchor language shows weak alignment with the multilingual semantic structure.")
-        
-        # Statistical analysis
-        st.subheader("📈 Statistical Analysis")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.write("**Primary Metric:**")
-            st.write(f"- Cosine Distance: {cosine_distance:.4f}")
-            st.write(f"- Cosine Similarity: {cosine_sim_val:.4f}")
-        
-        with col2:
-            st.write("**Set-based Metrics (N/A for single vector):**")
-            st.write(f"- Procrustes: {procrustes_display}")
-            st.write(f"- CKA: {cka_display}")
-            st.write(f"- EMD: {emd_display}")
+        # Interpretation in expander
+        with st.expander("💡 Interpretation", expanded=True):
+            if comparison_metrics['cosine_similarity'] > 0.8:
+                st.success("Strong semantic similarity detected")
+            elif comparison_metrics['cosine_similarity'] > 0.6:
+                st.warning("Moderate semantic similarity")
+            else:
+                st.error("Weak semantic similarity")
+            st.write("Cosine similarity and distance quantify how closely the anchor language aligns with the emergent multilingual structure at Tc.")
         
         # UMAP projection if available
         if hasattr(st.session_state, 'simulation_results') and hasattr(st.session_state, 'analysis_results'):
@@ -146,29 +84,6 @@ def render_anchor_comparison_tab(comparison_metrics: Dict[str, float], experimen
             except Exception as e:
                 st.info("UMAP projection not available for current data")
         
-        # Interpretation section
-        st.subheader("💡 Interpretation")
-        st.write("""
-        **Primary Semantic Metric:**
-        
-        - **Cosine Distance**: The most appropriate metric for comparing single vectors. Lower values indicate more similar meaning. This is the community standard for semantic similarity in modern embeddings.
-        
-        **Supporting Metrics:**
-        - **Cosine Similarity**: Complementary to cosine distance. Higher values indicate more similar vector directions.
-        
-        **Set-based Metrics (N/A for single vector comparison):**
-        - **Procrustes Distance**: Requires multiple vectors to measure structural alignment.
-        - **CKA Similarity**: Requires multiple vectors to measure representation similarity.
-        - **EMD Distance**: Requires multiple vectors to measure distribution similarity.
-        
-        **Why Cosine Distance?**
-        Cosine distance focuses on semantic content (vector orientation) rather than vector length, making it invariant to common embedding tricks like normalization, temperature scaling, or L2 regularization. It correlates best with human similarity judgments.
-        
-        **Experimental Design:**
-        - **Single-phase mode**: Anchor participates in Ising dynamics
-        - **Two-phase mode**: Anchor compared to emergent multilingual structure
-        """)
-        
     except Exception as e:
         logger.error(f"Error displaying comparison metrics: {e}")
         st.error("Error displaying comparison metrics. Please try again.")
@@ -184,40 +99,19 @@ def display_comparison_metrics(comparison_metrics: Dict[str, float]) -> None:
     try:
         st.subheader("📊 Comparison Metrics")
         
-        # Create columns for metrics
-        col1, col2 = st.columns(2)
+        # Primary metric: Cosine Distance
+        st.metric(
+            "Cosine Distance",
+            f"{comparison_metrics.get('cosine_distance', 0.0):.4f}",
+            help="Primary semantic distance metric. Lower values indicate more similar meaning."
+        )
         
-        with col1:
-            st.metric(
-                "Procrustes Distance",
-                f"{comparison_metrics.get('procrustes_distance', 0.0):.4f}",
-                help="Lower = better structural alignment"
-            )
-            st.metric(
-                "CKA Similarity",
-                f"{comparison_metrics.get('cka_similarity', 0.0):.4f}",
-                help="Higher = stronger similarity (0-1 scale)"
-            )
-        
-        with col2:
-            st.metric(
-                "EMD Distance",
-                f"{comparison_metrics.get('emd_distance', 0.0):.4f}",
-                help="Lower = more similar distributions"
-            )
-            st.metric(
-                "Cosine Similarity",
-                f"{comparison_metrics.get('cosine_similarity', 0.0):.4f}",
-                help="Higher = more similar vector directions"
-            )
-        
-        # Display KL divergence if available
-        if 'kl_divergence' in comparison_metrics:
-            st.metric(
-                "KL Divergence",
-                f"{comparison_metrics['kl_divergence']:.4f}",
-                help="Lower = more similar probability distributions"
-            )
+        # Supporting metric: Cosine Similarity
+        st.metric(
+            "Cosine Similarity",
+            f"{comparison_metrics.get('cosine_similarity', 0.0):.4f}",
+            help="Directional similarity. Higher values indicate more similar vector directions."
+        )
         
     except Exception as e:
         logger.error(f"Error displaying comparison metrics: {e}")
@@ -308,22 +202,8 @@ def display_metric_breakdown(comparison_metrics: Dict[str, float]) -> None:
     try:
         # Define metric descriptions and thresholds
         metric_info = {
-            'procrustes_distance': {
-                'description': 'Measures structural alignment between vector sets using optimal transformations',
-                'excellent': '< 0.1',
-                'good': '0.1 - 0.3',
-                'moderate': '0.3 - 0.6',
-                'poor': '> 0.6'
-            },
-            'cka_similarity': {
-                'description': 'Centered Kernel Alignment similarity measuring representation similarity',
-                'excellent': '> 0.8',
-                'good': '0.6 - 0.8',
-                'moderate': '0.4 - 0.6',
-                'poor': '< 0.4'
-            },
-            'emd_distance': {
-                'description': 'Earth Mover\'s Distance measuring distribution similarity',
+            'cosine_distance': {
+                'description': 'Primary semantic distance metric measuring vector orientation difference',
                 'excellent': '< 0.1',
                 'good': '0.1 - 0.3',
                 'moderate': '0.3 - 0.6',
@@ -335,13 +215,6 @@ def display_metric_breakdown(comparison_metrics: Dict[str, float]) -> None:
                 'good': '0.7 - 0.9',
                 'moderate': '0.5 - 0.7',
                 'poor': '< 0.5'
-            },
-            'kl_divergence': {
-                'description': 'Kullback-Leibler divergence measuring probability distribution difference',
-                'excellent': '< 0.1',
-                'good': '0.1 - 0.3',
-                'moderate': '0.3 - 0.6',
-                'poor': '> 0.6'
             }
         }
         
@@ -354,7 +227,7 @@ def display_metric_breakdown(comparison_metrics: Dict[str, float]) -> None:
                 st.write(f"**Description:** {info['description']}")
                 
                 # Determine quality level
-                if metric_name in ['cka_similarity', 'cosine_similarity']:
+                if metric_name in ['cosine_similarity']:
                     # Higher is better for these metrics
                     if value > 0.8:
                         quality = "excellent"
@@ -399,41 +272,29 @@ def display_statistical_analysis(comparison_metrics: Dict[str, float]) -> None:
     """
     try:
         # Calculate composite scores
-        cka_similarity = comparison_metrics.get('cka_similarity', 0.0)
-        procrustes_distance = comparison_metrics.get('procrustes_distance', 1.0)
         cosine_similarity = comparison_metrics.get('cosine_similarity', 0.0)
-        emd_distance = comparison_metrics.get('emd_distance', 1.0)
-        
-        # Normalize distances (lower is better, so invert)
-        normalized_procrustes = 1.0 - min(procrustes_distance, 1.0)
-        normalized_emd = 1.0 - min(emd_distance, 1.0)
         
         # Calculate different composite scores
-        structural_score = (cka_similarity + normalized_procrustes) / 2.0
         directional_score = cosine_similarity
-        distribution_score = normalized_emd
-        overall_score = (cka_similarity + normalized_procrustes + cosine_similarity + normalized_emd) / 4.0
         
         st.write("### Composite Scores")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.metric("Structural Alignment", f"{structural_score:.3f}")
             st.metric("Directional Similarity", f"{directional_score:.3f}")
         
         with col2:
-            st.metric("Distribution Similarity", f"{distribution_score:.3f}")
-            st.metric("Overall Similarity", f"{overall_score:.3f}")
+            st.metric("Overall Similarity", f"{directional_score:.3f}")
         
         # Display score interpretation
         st.write("### Score Interpretation")
         
-        if overall_score > 0.8:
+        if directional_score > 0.8:
             st.success("**Excellent semantic alignment** - Strong evidence of shared semantic space")
-        elif overall_score > 0.6:
+        elif directional_score > 0.6:
             st.success("**Good semantic alignment** - Clear evidence of shared semantic space")
-        elif overall_score > 0.4:
+        elif directional_score > 0.4:
             st.warning("**Moderate semantic alignment** - Some shared semantic space")
         else:
             st.error("**Weak semantic alignment** - Limited shared semantic space")
@@ -446,15 +307,10 @@ def display_statistical_analysis(comparison_metrics: Dict[str, float]) -> None:
         low_similarity_metrics = []
         
         for metric_name, value in comparison_metrics.items():
-            if metric_name in ['cka_similarity', 'cosine_similarity']:
+            if metric_name in ['cosine_similarity']:
                 if value > 0.7:
                     high_similarity_metrics.append(metric_name)
                 elif value < 0.4:
-                    low_similarity_metrics.append(metric_name)
-            else:
-                if value < 0.2:
-                    high_similarity_metrics.append(metric_name)
-                elif value > 0.6:
                     low_similarity_metrics.append(metric_name)
         
         if high_similarity_metrics:
@@ -486,12 +342,9 @@ def display_comparison_visualization(comparison_metrics: Dict[str, float]) -> No
         # Normalize values to 0-1 scale for radar chart
         normalized_values = []
         for i, (name, value) in enumerate(zip(metric_names, values)):
-            if name in ['cka_similarity', 'cosine_similarity']:
+            if name in ['cosine_similarity']:
                 # Higher is better, keep as is
                 normalized_values.append(min(value, 1.0))
-            else:
-                # Lower is better, invert
-                normalized_values.append(max(0.0, 1.0 - value))
         
         # Create radar chart
         fig = go.Figure()
@@ -586,13 +439,7 @@ def display_interpretation_and_insights(comparison_metrics: Dict[str, float],
         st.subheader("🧠 Interpretation & Insights")
         
         # Calculate overall assessment
-        cka_similarity = comparison_metrics.get('cka_similarity', 0.0)
-        procrustes_distance = comparison_metrics.get('procrustes_distance', 1.0)
         cosine_similarity = comparison_metrics.get('cosine_similarity', 0.0)
-        
-        # Normalize procrustes distance
-        normalized_procrustes = 1.0 - min(procrustes_distance, 1.0)
-        composite_score = (cka_similarity + normalized_procrustes + cosine_similarity) / 3.0
         
         # Determine experiment type
         include_anchor = experiment_config.get('include_anchor', False)
@@ -610,7 +457,7 @@ def display_interpretation_and_insights(comparison_metrics: Dict[str, float],
         st.write(f"**Research Question:** {question}")
         
         # Display insights based on composite score
-        if composite_score > 0.7:
+        if cosine_similarity > 0.7:
             st.success("**Strong Semantic Alignment Detected**")
             insights = f"""
             **Key Insights:**
@@ -626,7 +473,7 @@ def display_interpretation_and_insights(comparison_metrics: Dict[str, float],
             • Suggests similar cognitive representations across languages
             • Supports the existence of shared conceptual spaces
             """
-        elif composite_score > 0.5:
+        elif cosine_similarity > 0.5:
             st.warning("**Moderate Semantic Alignment**")
             insights = f"""
             **Key Insights:**

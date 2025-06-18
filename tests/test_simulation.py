@@ -281,3 +281,42 @@ class TestSimulation:
         
         assert 'vector_snapshots' in result
         assert len(result['vector_snapshots']) <= 2 
+    
+    def test_rerun_at_tc_logs_entropy_history(self):
+        """Test that rerunning at Tc logs entropy (alignment) history for all iterations."""
+        # Run a sweep to get metrics and detect Tc
+        sweep_result = run_temperature_sweep(self.test_vectors, self.temperature_range)
+        # For test, just pick a Tc in the sweep range
+        tc = self.temperature_range[2]  # e.g., 1.5
+        # Rerun at Tc with detailed logging
+        metrics, updated_vectors, convergence_info = simulate_at_temperature(self.test_vectors, tc, log_history=True)
+        # Check that alignment_history is present and has multiple entries
+        assert 'alignment_history' in convergence_info
+        assert isinstance(convergence_info['alignment_history'], list)
+        assert len(convergence_info['alignment_history']) > 1
+        # Check that logged_steps matches alignment_history
+        assert 'logged_steps' in convergence_info
+        assert len(convergence_info['logged_steps']) == len(convergence_info['alignment_history'])
+        # Check that entropy can be computed for each step
+        entropies = [1.0 - align for align in convergence_info['alignment_history']]
+        assert all(0.0 <= e <= 1.0 for e in entropies)
+
+    def test_entropy_evolution_at_tc_rerun(self):
+        """Test that after a sweep and Tc detection, a rerun at Tc logs entropy evolution and is stored in results."""
+        # Run a sweep to get metrics and detect Tc
+        sweep_result = run_temperature_sweep(self.test_vectors, self.temperature_range)
+        # Simulate Tc detection (pick a value in the sweep)
+        tc = self.temperature_range[2]  # e.g., 1.5
+        # Simulate rerun at Tc and store in results
+        metrics, updated_vectors, convergence_info = simulate_at_temperature(self.test_vectors, tc, log_every=1)
+        # Store in results as would be done in pipeline
+        sweep_result['entropy_evolution_at_tc'] = convergence_info
+        # Check that the key exists and has expected structure
+        assert 'entropy_evolution_at_tc' in sweep_result
+        info = sweep_result['entropy_evolution_at_tc']
+        assert 'alignment_history' in info and isinstance(info['alignment_history'], list)
+        assert 'logged_steps' in info and isinstance(info['logged_steps'], list)
+        assert len(info['alignment_history']) == len(info['logged_steps'])
+        # Check that entropy can be computed for each step
+        entropies = [1.0 - align for align in info['alignment_history']]
+        assert all(0.0 <= e <= 1.0 for e in entropies) 

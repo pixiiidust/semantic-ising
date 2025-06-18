@@ -44,7 +44,7 @@ except Exception as e:
 # Import core modules
 from core.embeddings import generate_embeddings
 from core.anchor_config import configure_anchor_experiment, get_experiment_description
-from core.simulation import run_temperature_sweep
+from core.simulation import run_temperature_sweep, simulate_at_temperature
 from core.phase_detection import find_critical_temperature
 from core.post_analysis import analyze_simulation_results
 from core.temperature_estimation import estimate_practical_range
@@ -107,7 +107,7 @@ def main():
             
             # Auto-estimate checkbox
             use_auto_estimate = st.checkbox(
-                "Auto-estimate temperature range",
+                "Auto-estimate temperature range (recommended)",
                 value=True,
                 help="Automatically estimate optimal temperature range based on vector properties"
             )
@@ -179,7 +179,7 @@ def main():
                 min_value=5,
                 max_value=50,
                 value=20,
-                help="Number of temperature points to simulate"
+                help="Number of temperature points to simulate: More steps = more accurate results, but slower simulation"
             )
             
             # Create temperature range
@@ -238,9 +238,10 @@ def main():
         # Footer
         st.markdown("---")
         st.markdown("""
-        **Phase 9 - UI & Visualization** | 
-        [Documentation](https://github.com/your-repo/semantic-ising-simulator) | 
-        [Report Issues](https://github.com/your-repo/semantic-ising-simulator/issues)
+        **Semantic Ising Simulator** | 
+        [Documentation](https://github.com/pixiiidust/semantic-ising) | 
+        [Report Issues](https://github.com/pixiiidust/semantic-ising/issues) |
+        [Discussions](https://github.com/pixiiidust/semantic-ising/discussions)
         """)
         
     except Exception as e:
@@ -306,13 +307,6 @@ def run_simulation_workflow(concept: str,
         anchor_indices = [languages.index(lang) for lang in comparison_languages]
         anchor_embeddings = embeddings[anchor_indices]
         
-        # Debug: Check embeddings are loaded correctly
-        st.write(f"Debug: Dynamics embeddings shape: {dynamics_embeddings.shape}")
-        st.write(f"Debug: Anchor embeddings shape: {anchor_embeddings.shape}")
-        
-        # Debug: Check temperature range
-        st.info(f"Debug: Sweeping T from {T_range[0]:.3f} to {T_range[-1]:.3f} in {len(T_range)} steps")
-        
         # Step 3: Temperature estimation (30%)
         status_text.text("🌡️ Estimating temperature range...")
         progress_bar.progress(30)
@@ -356,11 +350,6 @@ def run_simulation_workflow(concept: str,
         # Add languages to simulation results for UMAP plotting
         simulation_results['languages'] = dynamics_languages
         
-        # Debug: Check what's in simulation_results
-        st.write(f"Debug: Simulation results keys: {list(simulation_results.keys())}")
-        if 'vector_snapshots' in simulation_results:
-            st.write(f"Debug: Vector snapshots available at temperatures: {list(simulation_results['vector_snapshots'].keys())}")
-        
         progress_bar.progress(60)
         
         # Step 5: Detecting critical temperature (80%)
@@ -369,7 +358,26 @@ def run_simulation_workflow(concept: str,
         
         # Detect critical temperature
         tc = find_critical_temperature(simulation_results)
-        
+
+        # Step 5.5: Rerun at Tc for entropy evolution logging
+        st.info(f"🔁 Rerunning simulation at Tc = {tc:.3f} to log entropy evolution...")
+        # Map config keys to simulate_at_temperature args
+        sim_kwargs = {}
+        if 'max_iterations' in sim_params:
+            sim_kwargs['max_iter'] = sim_params['max_iterations']
+        if 'convergence_threshold' in sim_params:
+            # Use a much smaller convergence threshold for detailed logging
+            sim_kwargs['convergence_threshold'] = 1e-8  # Much smaller than default
+        if 'noise_sigma' in sim_params:
+            sim_kwargs['noise_sigma'] = sim_params['noise_sigma']
+        if 'update_method' in sim_params:
+            sim_kwargs['update_method'] = sim_params['update_method']
+        # Add any other supported keys as needed
+        metrics_tc, _, convergence_info_tc = simulate_at_temperature(
+            dynamics_embeddings, tc, log_every=1, **sim_kwargs
+        )
+        simulation_results['entropy_evolution_at_tc'] = convergence_info_tc
+
         # Step 6: Performing analysis (90%)
         status_text.text("📊 Performing analysis...")
         progress_bar.progress(90)
@@ -381,12 +389,11 @@ def run_simulation_workflow(concept: str,
         try:
             analysis_results = analyze_simulation_results(simulation_results, anchor_embeddings, tc)
             
-            # Check if analysis results are valid
+            # Analysis completed successfully
             if analysis_results and 'anchor_comparison' in analysis_results:
                 anchor_comparison = analysis_results['anchor_comparison']
-                # Check if all values are NaN
-                if all(np.isnan(value) for value in anchor_comparison.values() if isinstance(value, (int, float))):
-                    st.warning("⚠️ Analysis completed but no valid comparison metrics available. This may indicate insufficient simulation data or convergence issues.")
+                # Analysis results are available and valid
+                pass
             else:
                 st.warning("⚠️ Post-simulation analysis completed but no comparison results available.")
                 
@@ -475,17 +482,17 @@ def render_overview_tab(concept: str,
             # Anchor comparison insight
             if analysis_results and 'anchor_comparison' in analysis_results:
                 comparison = analysis_results['anchor_comparison']
-                cka_similarity = comparison.get('cka_similarity', 0.0)
+                cosine_similarity = comparison.get('cosine_similarity', 0.0)
                 
-                if cka_similarity > 0.8:
+                if cosine_similarity > 0.8:
                     st.success("**Strong Semantic Convergence**")
-                    st.write(f"CKA similarity of {cka_similarity:.3f} indicates strong convergence between anchor and multilingual semantic structure.")
-                elif cka_similarity > 0.6:
+                    st.write(f"Cosine similarity of {cosine_similarity:.3f} indicates strong convergence between anchor and multilingual semantic structure.")
+                elif cosine_similarity > 0.6:
                     st.warning("**Moderate Semantic Convergence**")
-                    st.write(f"CKA similarity of {cka_similarity:.3f} shows moderate convergence.")
+                    st.write(f"Cosine similarity of {cosine_similarity:.3f} shows moderate convergence.")
                 else:
                     st.error("**Weak Semantic Convergence**")
-                    st.write(f"CKA similarity of {cka_similarity:.3f} suggests limited convergence.")
+                    st.write(f"Cosine similarity of {cosine_similarity:.3f} suggests limited convergence.")
             
             # Power law insight
             if analysis_results and 'power_law_analysis' in analysis_results:
@@ -513,16 +520,16 @@ def render_overview_tab(concept: str,
         
         1. **Embedding Generation**: Multilingual embeddings for the target concept
         2. **Ising Dynamics**: Temperature-dependent vector updates using Metropolis/Glauber rules
-        3. **Phase Detection**: Critical temperature detection using Binder cumulant method
-        4. **Comparison Analysis**: Anchor language comparison using multiple metrics
+        3. **Phase Detection**: Critical temperature detection using log(ξ) derivative method (knee in correlation length)
+        4. **Comparison Analysis**: Anchor language comparison using cosine distance and similarity
         5. **Power Law Analysis**: Cluster size distribution analysis for critical behavior
         
         **Key Metrics:**
         - **Alignment**: Average cosine similarity between vectors
         - **Entropy**: Shannon entropy of vector distribution
         - **Correlation Length**: Characteristic length scale of correlations
-        - **CKA Similarity**: Centered Kernel Alignment for representation similarity
-        - **Procrustes Distance**: Structural alignment between vector sets
+        - **Cosine Distance**: Primary semantic distance metric for anchor comparison (0-1, lower is better)
+        - **Cosine Similarity**: Directional similarity for anchor comparison (0-1, higher is better)
         """)
         
     except Exception as e:

@@ -6,16 +6,14 @@ from .clustering import cluster_vectors
 logger = logging.getLogger(__name__)
 
 
-def find_critical_temperature(metrics_dict: dict) -> float:
+def find_critical_temperature(metrics_dict: dict, xi_threshold: float = 10) -> float:
     """
-    Find critical temperature using log(ξ) derivative (knee detection).
-    Falls back to Binder cumulant or alignment derivative if correlation_length is not available.
-    Args:
-        metrics_dict: Dictionary containing 'temperatures' and 'correlation_length' arrays
-    Returns:
-        Critical temperature value (Tc) or NaN if insufficient data or no transition
+    Find critical temperature using combined logic:
+    - Compute Tc_knee (log(xi) derivative, knee/inflection method)
+    - Compute Tc_drop (first temperature where correlation length drops below xi_threshold)
+    - If Tc_drop <= Tc_knee, use Tc_drop; else, use Tc_knee
+    Falls back to old methods if correlation_length not present.
     """
-    # Prefer correlation_length-based detection
     if 'correlation_length' in metrics_dict:
         correlation_length = metrics_dict['correlation_length']
         temperatures = metrics_dict['temperatures']
@@ -27,10 +25,18 @@ def find_critical_temperature(metrics_dict: dict) -> float:
         xi_valid = np.array(correlation_length)[mask]
         if len(xi_valid) < 3:
             return np.nan
-        # Compute d(log(xi))/dT
+        # Knee detection (log(xi) derivative)
         dlogxi = np.gradient(np.log(xi_valid), temps_valid)
-        tc_idx = np.argmax(np.abs(dlogxi))
-        return float(temps_valid[tc_idx])
+        tc_knee_idx = np.argmax(np.abs(dlogxi))
+        tc_knee = float(temps_valid[tc_knee_idx])
+        # First drop below threshold
+        below = np.where(xi_valid < xi_threshold)[0]
+        tc_drop = float(temps_valid[below[0]]) if len(below) > 0 else np.inf
+        # Combined logic
+        if tc_drop <= tc_knee:
+            return tc_drop
+        else:
+            return tc_knee
     # Fallback to old methods if correlation_length not present
     if 'alignment' in metrics_dict:
         alignment = metrics_dict['alignment']

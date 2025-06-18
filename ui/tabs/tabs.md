@@ -95,10 +95,8 @@ ui/tabs/
 - **Interactive Controls**: Zoom, pan, and selection
 
 **Comparison Metrics**:
-- **Procrustes Distance**: Structural alignment
-- **CKA Similarity**: Centered Kernel Alignment
-- **EMD Distance**: Earth Mover's Distance
-- **Cosine Similarity**: Vector direction similarity
+- **Cosine Distance**: Primary semantic distance metric (0-1, lower is better)
+- **Cosine Similarity**: Directional similarity (0-1, higher is better)
 
 ## 🧭 Navigation
 

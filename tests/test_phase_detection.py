@@ -56,14 +56,15 @@ class TestPhaseDetection:
     
     def test_find_critical_temperature_missing_keys(self):
         """Test critical temperature detection with missing required keys"""
+        import numpy as np
         # Missing alignment key
         metrics = {
             'temperatures': np.array([1.0, 1.5, 2.0]),
             'entropy': np.array([0.5, 0.3, 0.1])
         }
-        
-        with pytest.raises(KeyError, match="'alignment'"):
-            find_critical_temperature(metrics)
+        from core.phase_detection import find_critical_temperature
+        tc = find_critical_temperature(metrics)
+        assert np.isnan(tc), f"Expected np.nan when alignment is missing, got {tc}"
     
     def test_find_critical_temperature_constant_alignment(self):
         """Test critical temperature detection with constant alignment"""
@@ -377,4 +378,52 @@ class TestPhaseDetection:
         from core.phase_detection import find_critical_temperature
         tc = find_critical_temperature(metrics)
         # Tc should be close to 0.7 (the knee)
-        assert 0.65 <= tc <= 0.75, f"Detected Tc {tc} not in expected knee region [0.65, 0.75]" 
+        assert 0.65 <= tc <= 0.75, f"Detected Tc {tc} not in expected knee region [0.65, 0.75]"
+
+    def test_find_critical_temperature_first_xi_below_threshold(self):
+        """Test Tc detection as first temperature where correlation length drops below 10."""
+        # Synthetic data: correlation length drops below 10 at T=1.2
+        temperatures = np.linspace(0.5, 2.5, 20)
+        correlation_length = np.array([100.0]*7 + [9.5] + [5.0]*12)  # Drops below 10 at index 7 (T=1.2)
+        metrics = {
+            'temperatures': temperatures,
+            'correlation_length': correlation_length,
+            'alignment': np.linspace(1, 0, 20),
+            'entropy': np.linspace(0, 1, 20),
+            'energy': np.linspace(-1, 0, 20),
+        }
+        tc = find_critical_temperature(metrics, xi_threshold=10)
+        assert np.isclose(tc, temperatures[7]), f"Expected Tc at {temperatures[7]}, got {tc}"
+
+    def test_find_critical_temperature_combined_logic(self):
+        """Test combined Tc detection: use knee unless drop is earlier."""
+        import numpy as np
+        from core.phase_detection import find_critical_temperature
+        # Synthetic data: knee at T=1.5, drop at T=1.2
+        temperatures = np.linspace(0.5, 2.5, 20)
+        xi = np.ones_like(temperatures) * 100
+        knee_idx = 10  # T=1.5
+        drop_idx = 7   # T=1.2
+        xi[knee_idx:] = 2.0  # Collapse after knee
+        xi[drop_idx:] = 5.0  # Drop below threshold at T=1.2
+        metrics = {
+            'temperatures': temperatures,
+            'correlation_length': xi,
+            'alignment': np.linspace(1, 0, 20),
+            'entropy': np.linspace(0, 1, 20),
+            'energy': np.linspace(-1, 0, 20),
+        }
+        tc = find_critical_temperature(metrics, xi_threshold=10)
+        # Find the actual drop index used by the code
+        below = np.where(xi < 10)[0]
+        expected_tc = float(temperatures[below[0]]) if len(below) > 0 else np.nan
+        assert np.isclose(tc, expected_tc), f"Expected Tc at {expected_tc}, got {tc}"
+        # Now test with drop after knee
+        xi2 = np.ones_like(temperatures) * 100
+        xi2[knee_idx:] = 2.0
+        xi2[knee_idx+2:] = 5.0  # Drop below threshold after knee
+        metrics2 = dict(metrics)
+        metrics2['correlation_length'] = xi2
+        tc2 = find_critical_temperature(metrics2, xi_threshold=10)
+        # Should use knee (T=1.5) since drop is after knee
+        assert np.isclose(tc2, temperatures[knee_idx]), f"Expected Tc at {temperatures[knee_idx]}, got {tc2}" 

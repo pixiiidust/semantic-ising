@@ -59,7 +59,28 @@ def compute_kl_divergence(vectors_a: np.ndarray, vectors_b: np.ndarray, bins: in
     return entropy(hist_a, hist_b)
 
 def compare_anchor_to_multilingual(anchor_vectors: np.ndarray, multilingual_vectors: np.ndarray, tc: float, metrics: Dict[str, np.ndarray]) -> Dict[str, float]:
-    """Compare anchor language to multilingual result at critical temperature."""
+    """
+    Compare anchor language to multilingual result at critical temperature.
+    
+    For single vector vs meta-vector comparison, only cosine distance and cosine similarity 
+    are meaningful. Set-based metrics (Procrustes, CKA, EMD, KL) are set to NaN since 
+    they require multiple vectors for meaningful computation.
+    
+    Args:
+        anchor_vectors: Anchor language vector(s)
+        multilingual_vectors: Multilingual vectors at Tc
+        tc: Critical temperature
+        metrics: Simulation metrics dictionary
+        
+    Returns:
+        Dictionary with comparison metrics:
+        - cosine_distance: Primary semantic distance metric (0-1, lower is better)
+        - cosine_similarity: Directional similarity (0-1, higher is better)
+        - procrustes_distance: NaN (requires multiple vectors)
+        - cka_similarity: NaN (requires multiple vectors)
+        - emd_distance: NaN (requires multiple vectors)
+        - kl_divergence: NaN (requires multiple vectors)
+    """
     # Validate required metrics keys
     required_keys = ['temperatures', 'alignment', 'entropy', 'energy', 'correlation_length']
     for key in required_keys:

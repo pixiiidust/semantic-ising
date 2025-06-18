@@ -32,11 +32,10 @@ def render_overview_tab(concept: str, encoder: str, T_range: List[float],
     with st.expander("🆕 What's new in this version?", expanded=False):
         st.markdown("""
         **Version 2.0 Features**:
-        - ✅ **Anchor Language Configuration**: Choose which language participates in dynamics vs comparison
-        - ✅ **Vector Interpolation**: Get vectors at exactly Tc, not just nearby snapshots
-        - ✅ **Advanced Comparison Metrics**: Procrustes distance, CKA similarity, EMD distance
-        - ✅ **Two-Phase Experiments**: Compare anchor language to emergent multilingual structure
-        - ✅ **Enhanced UI**: Better charts, clearer explanations, improved error handling
+        - ✅ **Anchor Configuration**: Choose anchor language and include/exclude from dynamics
+        - ✅ **Critical Temperature Detection**: Automatic Tc detection using log(ξ) derivative method
+        - ✅ **UMAP Visualization**: Interactive 2D projections with language tooltips
+        - ✅ **Export Capabilities**: CSV, PNG, and configuration export
         """)
     
     # Step-by-step instructions
@@ -97,6 +96,22 @@ def render_overview_tab(concept: str, encoder: str, T_range: List[float],
         - Semantically identical words should converge at Tc
         - Reveals shared latent semantic structure
         - Tests universal semantic representation hypothesis
+        
+        **🔬 Methodology**:
+        
+        **Semantic Ising Model**:
+        - **Embedding Generation**: Multilingual embeddings for the target concept
+        - **Ising Dynamics**: Temperature-dependent vector updates using Metropolis/Glauber rules
+        - **Phase Detection**: Critical temperature detection using log(ξ) derivative method (knee in correlation length)
+        - **Comparison Analysis**: Anchor language comparison using cosine distance and similarity
+        - **Power Law Analysis**: Cluster size distribution analysis for critical behavior
+        
+        **Key Metrics**:
+        - **Alignment**: Average cosine similarity between vectors
+        - **Entropy**: Shannon entropy of vector distribution
+        - **Correlation Length**: Characteristic length scale of correlations
+        - **Cosine Distance**: Primary semantic distance metric for anchor comparison (0-1, lower is better)
+        - **Cosine Similarity**: Directional similarity for anchor comparison (0-1, higher is better)
         """)
     
     # Troubleshooting

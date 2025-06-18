@@ -258,3 +258,10 @@ pytest tests/test_ui_integration.py -v
 - **Plotly**: Interactive visualization library
 - **UMAP**: Dimensionality reduction algorithm
 - **Material Design**: UI/UX design principles 
+
+## 📝 Recent UI/UX Updates
+- Section headers and chart explanations updated for clarity and professionalism.
+- Convergence summary chart now only shows the vertical Tc line (critical temperature), with the convergence threshold line removed.
+- Anchor comparison tab is cleaner, with collapsible sections and no redundant metrics.
+- All debug output removed from user-facing UI.
+- UI and backend now always use the same Tc value for both display and charting, ensuring perfect synchronization. 

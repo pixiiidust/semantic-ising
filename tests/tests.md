@@ -22,6 +22,10 @@ The test suite provides comprehensive validation for the Semantic Ising Simulato
 - **Performance benchmarking** and validation
 - **Error handling** and edge case testing
 
+## 📝 Recent Updates
+- Tests updated to match new Tc detection logic and UI output.
+- All new/changed logic is covered by corresponding tests, including UI synchronization and chart display for critical temperature.
+
 ## 📁 Test Structure
 
 ```

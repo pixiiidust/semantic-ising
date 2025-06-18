@@ -128,7 +128,10 @@ The core modules implement the scientific foundation of the Semantic Ising Simul
 **Purpose**: Advanced comparison metrics for anchor language analysis
 
 **Key Functions**:
-- `compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, metrics)` - Compare anchor vector to meta-vector of multilingual set using cosine distance as primary metric
+- `compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, metrics)` - Anchor comparison at critical temperature
+  - **Primary Metrics**: Cosine distance and cosine similarity (meaningful for single vector comparison)
+  - **Set-based Metrics**: Procrustes, CKA, EMD, KL divergence (set to NaN for single vector comparison)
+  - **Returns**: Dictionary with all metrics, but only cosine metrics are meaningful
 - `compute_procrustes_distance(vectors_a, vectors_b)` - Structural alignment (requires multiple vectors)
 - `compute_cka_similarity(vectors_a, vectors_b)` - Centered Kernel Alignment (requires multiple vectors)
 - `compute_emd_distance(vectors_a, vectors_b)` - Earth Mover's Distance (requires multiple vectors)
@@ -287,3 +290,8 @@ pytest tests/test_*.py -v
 ## Comparison Metrics (core/comparison_metrics.py)
 
 - **compare_anchor_to_multilingual**: Now compares anchor vector to meta-vector of multilingual set (not individual vectors). Uses cosine distance as the primary semantic metric, with set-based metrics (Procrustes, CKA, EMD, KL) set to NaN for single vector comparison. This follows community standards for semantic similarity in modern embeddings. 
+
+### 📝 Recent Updates
+- Improved synchronization between backend Tc detection and UI display: the critical temperature (Tc) value is now always consistent between backend logic and user interface charts.
+- Removed all debug output from core modules for a cleaner user experience.
+- The convergence summary chart now only displays the vertical Tc line (critical temperature), with the convergence threshold line removed for clarity.

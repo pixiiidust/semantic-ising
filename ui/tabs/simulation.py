@@ -24,7 +24,9 @@ from ui.charts import (
     plot_alignment_vs_temperature,
     plot_energy_vs_temperature,
     plot_correlation_length_vs_temperature,
-    plot_convergence_history
+    plot_convergence_history,
+    plot_convergence_summary,
+    plot_entropy_vs_correlation_length
 )
 
 logger = logging.getLogger(__name__)
@@ -111,116 +113,38 @@ def render_simulation_tab(concept: str,
                 st.plotly_chart(fig_corr, use_container_width=True, key="correlation_length_chart")
         
         with tab2:
-            # Convergence analysis
             st.subheader("🔄 Convergence Analysis")
-            
-            # Debug: Show what's available in simulation_results
-            st.write("**Debug Info:**")
-            st.write(f"Simulation results keys: {list(simulation_results.keys())}")
-            
+            # Convergence analysis
             if 'convergence_data' in simulation_results:
                 convergence_data = simulation_results['convergence_data']
-                st.write(f"Convergence data found: {len(convergence_data)} temperature points")
+                # Show convergence summary across temperatures
+                tc = st.session_state.critical_temperature if hasattr(st.session_state, 'critical_temperature') else None
+                st.markdown("<h4>Convergence Summary Across Temperatures:</h4>", unsafe_allow_html=True)
+                st.write("""
+                * This chart shows how well the simulation converged at each temperature point. 
+                * Green markers indicate successful convergence, orange shows plateau behavior, and red indicates divergence. 
+                * The vertical red dashed line marks the critical temperature (Tc), where the system transitions from order to disorder.""")
+                fig_summary = plot_convergence_summary(convergence_data, tc=tc)
+                st.plotly_chart(fig_summary, use_container_width=True)
                 
-                # Show sample convergence data
-                if convergence_data:
-                    sample_data = convergence_data[0]
-                    st.write(f"Sample convergence data keys: {list(sample_data.keys())}")
-                    st.write(f"Sample status: {sample_data.get('status', 'N/A')}")
-                    st.write(f"Sample iterations: {sample_data.get('iterations', 'N/A')}")
+                # Show entropy vs correlation length instead of entropy evolution at Tc
+                st.markdown("<h4>Entropy vs Correlation Length:</h4>", unsafe_allow_html=True)
+                st.write("""
+                * This chart shows how system disorder (entropy) and the range of semantic correlations (correlation length) evolve together as temperature changes. 
+                * When both entropy rises and correlation length collapses, the system loses long-range order and fails to converge, marking the phase transition. 
+                * The critical temperature point is highlighted, showing where the system transitions from ordered to disordered behavior.""")
+                fig_entropy_corr = plot_entropy_vs_correlation_length(simulation_results)
+                st.plotly_chart(fig_entropy_corr, use_container_width=True)
                 
-                # Convergence summary
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    # Summary plot
-                    st.write("**Debug: Creating convergence summary chart...**")
-                    fig_summary = plot_convergence_history(convergence_data)
-                    st.write(f"**Debug: Chart created with {len(fig_summary.data)} traces**")
-                    st.plotly_chart(fig_summary, use_container_width=True, key="convergence_summary_chart")
-                
-                with col2:
-                    # Convergence statistics
-                    st.subheader("📊 Convergence Statistics")
-                    
-                    # Count different statuses
-                    status_counts = {}
-                    for data in convergence_data:
-                        status = data['status']
-                        status_counts[status] = status_counts.get(status, 0) + 1
-                    
-                    for status, count in status_counts.items():
-                        color = {
-                            'converged': 'green',
-                            'plateau': 'orange', 
-                            'diverging': 'red',
-                            'max_steps': 'purple',
-                            'error': 'gray'
-                        }.get(status, 'blue')
-                        
-                        st.metric(f"{status.title()}", count, delta=None)
-                    
-                    # Average iterations
-                    valid_iterations = [data['iterations'] for data in convergence_data 
-                                      if data['status'] != 'error' and data['iterations'] > 0]
-                    if valid_iterations:
-                        avg_iterations = sum(valid_iterations) / len(valid_iterations)
-                        st.metric("Average Iterations", f"{avg_iterations:.1f}")
-                
-                # Detailed convergence for specific temperature
-                st.subheader("🔍 Detailed Convergence")
-                
-                if 'temperatures' in simulation_results:
-                    temps = simulation_results['temperatures']
-                    selected_temp = st.selectbox(
-                        "Select temperature for detailed convergence analysis:",
-                        temps,
-                        format_func=lambda x: f"T = {x:.3f}"
-                    )
-                    
-                    fig_detail = plot_convergence_history(convergence_data, selected_temp)
-                    st.plotly_chart(fig_detail, use_container_width=True, key="convergence_detail_chart")
-                    
-                    # Show convergence info for selected temperature
-                    temp_data = next((data for data in convergence_data 
-                                    if abs(data['temperature'] - selected_temp) < 1e-6), None)
-                    
-                    if temp_data and temp_data['convergence_infos']:
-                        conv_info = temp_data['convergence_infos'][0]
-                        
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("Status", temp_data['status'].title())
-                        with col2:
-                            st.metric("Final Difference", f"{temp_data['final_diff']:.2e}")
-                        with col3:
-                            st.metric("Iterations", temp_data['iterations'])
-                        
-                        # Show convergence history as table
-                        if conv_info['diff_history']:
-                            st.subheader("📋 Convergence History")
-                            history_data = {
-                                'Iteration': conv_info['logged_steps'],
-                                'Difference': [f"{d:.2e}" for d in conv_info['diff_history']],
-                                'Alignment': [f"{a:.4f}" for a in conv_info['alignment_history']]
-                            }
-                            st.dataframe(history_data, use_container_width=True)
+                # Add explanation
+                st.info("""
+                **Convergence Analysis Explanation:**
+                - **Summary Chart**: Shows convergence status (green=converged, orange=plateau, red=diverging) and final difference values across all temperatures
+                - **Entropy vs Correlation Length**: Shows the relationship between disorder and spatial correlation at each temperature, with the critical temperature (Tc) highlighted
+                - **Critical Temperature**: The point where the system transitions from ordered to disordered behavior, marked on all charts
+                """)
             else:
                 st.warning("No convergence data available in simulation results.")
-                st.write("**Expected convergence_data structure:**")
-                st.write("""
-                ```python
-                convergence_data = [
-                    {
-                        'temperature': float,
-                        'convergence_infos': [{'diff_history': [...], 'logged_steps': [...], ...}],
-                        'final_diff': float,
-                        'status': str,  # 'converged', 'plateau', 'diverging', 'max_steps', 'error'
-                        'iterations': int
-                    },
-                    ...
-                ]
-                ```""")
         
         with tab3:
             # Detailed information
@@ -288,21 +212,25 @@ def display_simulation_results() -> None:
         
         with tab1:
             st.subheader("Entropy vs Temperature")
+            st.write("This chart shows how system disorder (entropy) changes with temperature. At low temperatures, the system is ordered (low entropy). As temperature increases, disorder grows until reaching a maximum at the critical temperature, where the system transitions from ordered to disordered behavior.")
             fig = plot_entropy_vs_temperature(simulation_results)
             st.plotly_chart(fig, use_container_width=True, key="entropy_tab_chart")
         
         with tab2:
             st.subheader("Alignment vs Temperature")
+            st.write("This chart shows how well the multilingual vectors align with each other as temperature changes. High alignment indicates strong semantic convergence across languages. The critical temperature marks where alignment begins to break down, signaling the loss of universal semantic structure.")
             fig = plot_alignment_vs_temperature(simulation_results)
             st.plotly_chart(fig, use_container_width=True, key="alignment_tab_chart")
         
         with tab3:
             st.subheader("Energy vs Temperature")
+            st.write("This chart shows the system's energy as temperature increases. At low temperatures, the system minimizes energy through strong semantic coupling. As temperature rises, thermal fluctuations overcome the coupling, leading to higher energy states and eventual disorder.")
             fig = plot_energy_vs_temperature(simulation_results)
             st.plotly_chart(fig, use_container_width=True, key="energy_tab_chart")
         
         with tab4:
             st.subheader("Correlation Length vs Temperature")
+            st.write("This chart shows how far semantic correlations extend in the system. At low temperatures, correlations extend far (high correlation length). As temperature approaches the critical point, correlations become shorter-ranged, indicating the breakdown of long-range semantic order.")
             fig = plot_correlation_length_vs_temperature(simulation_results)
             st.plotly_chart(fig, use_container_width=True, key="correlation_length_tab_chart")
         
@@ -335,19 +263,18 @@ def display_anchor_interpretation(comparison_metrics: Dict[str, float]) -> None:
     try:
         st.subheader("🔍 Interpretation")
         
-        cka_similarity = comparison_metrics.get('cka_similarity', 0.0)
-        procrustes_distance = comparison_metrics.get('procrustes_distance', 1.0)
         cosine_similarity = comparison_metrics.get('cosine_similarity', 0.0)
+        cosine_distance = comparison_metrics.get('cosine_distance', 1.0)
         
-        # Determine overall similarity assessment
-        if cka_similarity > 0.7 and procrustes_distance < 0.3 and cosine_similarity > 0.8:
+        # Determine overall similarity assessment based on cosine similarity
+        if cosine_similarity > 0.8:
             st.success("**Strong semantic similarity detected**")
             interpretation = """
             The anchor language shows strong alignment with the multilingual semantic structure.
             This suggests that the anchor language shares similar semantic representations
             with other languages in the concept space.
             """
-        elif cka_similarity > 0.4 and procrustes_distance < 0.6 and cosine_similarity > 0.6:
+        elif cosine_similarity > 0.6:
             st.warning("**Moderate semantic similarity**")
             interpretation = """
             The anchor language shows moderate alignment with the multilingual semantic structure.
@@ -369,26 +296,16 @@ def display_anchor_interpretation(comparison_metrics: Dict[str, float]) -> None:
         
         with col1:
             st.metric(
-                "CKA Similarity",
-                f"{cka_similarity:.3f}",
-                help="Centered Kernel Alignment similarity (0-1 scale)"
-            )
-            st.metric(
-                "Procrustes Distance",
-                f"{procrustes_distance:.3f}",
-                help="Structural alignment distance (lower is better)"
+                "Cosine Distance",
+                f"{cosine_distance:.3f}",
+                help="Primary semantic distance metric (0-1, lower is better)"
             )
         
         with col2:
             st.metric(
                 "Cosine Similarity",
                 f"{cosine_similarity:.3f}",
-                help="Average cosine similarity between vectors"
-            )
-            st.metric(
-                "EMD Distance",
-                f"{comparison_metrics.get('emd_distance', 0.0):.3f}",
-                help="Earth Mover's Distance (lower is better)"
+                help="Directional similarity (0-1, higher is better)"
             )
         
     except Exception as e:

@@ -266,8 +266,27 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
         meta_result = compute_meta_vector(tc_vectors, method="centroid")
         meta_vector = meta_result['meta_vector']
         
-        # Combine vectors for UMAP projection: language vectors + meta-vector
-        all_vectors = np.vstack([tc_vectors, meta_vector.reshape(1, -1)])
+        # Prepare vectors for UMAP projection
+        if anchor_language and not include_anchor:
+            # Get anchor vector from the original embeddings
+            from core.embeddings import generate_embeddings
+            try:
+                # Get all embeddings including anchor
+                all_embeddings, all_languages = generate_embeddings(simulation_results.get('concept', 'dog'), 
+                                                                   simulation_results.get('encoder', 'LaBSE'))
+                anchor_idx = all_languages.index(anchor_language)
+                anchor_vector = all_embeddings[anchor_idx:anchor_idx+1]  # Keep 2D shape
+                
+                # Combine vectors for UMAP: dynamics vectors + meta-vector + anchor vector
+                all_vectors = np.vstack([tc_vectors, meta_vector.reshape(1, -1), anchor_vector])
+            except Exception as e:
+                # Fallback: just use dynamics vectors + meta-vector
+                all_vectors = np.vstack([tc_vectors, meta_vector.reshape(1, -1)])
+                anchor_vector = None
+        else:
+            # Combine vectors for UMAP projection: language vectors + meta-vector
+            all_vectors = np.vstack([tc_vectors, meta_vector.reshape(1, -1)])
+            anchor_vector = None
         
         # Perform UMAP projection on all vectors
         try:
@@ -277,9 +296,17 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
         except ImportError:
             return go.Figure()
         
-        # Separate coordinates for language vectors and meta-vector
-        language_coords = coords[:-1]  # All except last
-        meta_coords = coords[-1]       # Last one is meta-vector
+        # Separate coordinates for language vectors, meta-vector, and anchor vector (if present)
+        if anchor_vector is not None:
+            # Format: [language_vectors, meta_vector, anchor_vector]
+            language_coords = coords[:-2]  # All except last two
+            meta_coords = coords[-2]       # Second to last is meta-vector
+            anchor_coords = coords[-1]     # Last one is anchor vector
+        else:
+            # Format: [language_vectors, meta_vector]
+            language_coords = coords[:-1]  # All except last
+            meta_coords = coords[-1]       # Last one is meta-vector
+            anchor_coords = None
             
         # Adjust languages if needed
         if len(languages) != len(tc_vectors):
@@ -296,66 +323,24 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
         # Create scatter plot with anchor language and meta-vector highlighting
         fig = go.Figure()
         
-        # Plot all language vectors first (excluding anchor if it should be highlighted separately)
-        if anchor_language and include_anchor and anchor_language in languages:
-            # Find anchor language index
-            anchor_idx = languages.index(anchor_language)
-            
-            # Plot non-anchor languages
-            non_anchor_indices = [i for i in range(len(languages)) if i != anchor_idx]
-            if non_anchor_indices:
-                fig.add_trace(go.Scatter(
-                    x=language_coords[non_anchor_indices, 0],
-                    y=language_coords[non_anchor_indices, 1],
-                    mode='markers+text',
-                    name='Other Languages',
-                    text=[languages[i] for i in non_anchor_indices],
-                    textposition="top center",
-                    marker=dict(
-                        size=10,
-                        color='#636EFA',
-                        line=dict(width=1, color='white')
-                    ),
-                    customdata=[hover_texts[i] for i in non_anchor_indices],
-                    hovertemplate='<b>%{text}</b><br>%{customdata}<br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
-                ))
-            
-            # Plot anchor language with red circle highlighting
-            fig.add_trace(go.Scatter(
-                x=[language_coords[anchor_idx, 0]],
-                y=[language_coords[anchor_idx, 1]],
-                mode='markers+text',
-                name=f'Anchor ({anchor_language})',
-                text=[anchor_language],
-                textposition="top center",
-                marker=dict(
-                    size=15,
-                    color='#FF6B6B',
-                    line=dict(width=2, color='white'),
-                    symbol='circle'
-                ),
-                customdata=[hover_texts[anchor_idx]],
-                hovertemplate=f'<b>{anchor_language} (Anchor)</b><br>%{{customdata}}<br>x: %{{x:.3f}}<br>y: %{{y:.3f}}<extra></extra>'
-            ))
-        else:
-            # Plot all languages normally (no anchor highlighting)
-            fig.add_trace(go.Scatter(
-                x=language_coords[:, 0],
-                y=language_coords[:, 1],
-                mode='markers+text',
-                name='Languages',
-                text=languages,
-                textposition="top center",
-                marker=dict(
-                    size=10,
-                    color='#636EFA',
-                    line=dict(width=1, color='white')
-                ),
-                customdata=hover_texts,
-                hovertemplate='<b>%{text}</b><br>%{customdata}<br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
-            ))
+        # Plot all language vectors first (these are the dynamics languages)
+        fig.add_trace(go.Scatter(
+            x=language_coords[:, 0],
+            y=language_coords[:, 1],
+            mode='markers+text',
+            name='Multilingual Set',
+            text=languages,
+            textposition="top center",
+            marker=dict(
+                size=10,
+                color='#636EFA',
+                line=dict(width=1, color='white')
+            ),
+            customdata=hover_texts,
+            hovertemplate='<b>%{text}</b><br>%{customdata}<br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
+        ))
         
-        # Always plot meta-vector as red circle
+        # Plot meta-vector as red circle
         fig.add_trace(go.Scatter(
             x=[meta_coords[0]],
             y=[meta_coords[1]],
@@ -373,6 +358,25 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
             hovertemplate='<b>Meta-Vector</b><br>Centroid of multilingual set<br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
         ))
         
+        # Plot anchor vector if present (excluded case)
+        if anchor_coords is not None:
+            fig.add_trace(go.Scatter(
+                x=[anchor_coords[0]],
+                y=[anchor_coords[1]],
+                mode='markers+text',
+                name=f'Anchor ({anchor_language})',
+                text=[anchor_language],
+                textposition="top center",
+                marker=dict(
+                    size=15,
+                    color='#00D4AA',  # Different color to distinguish from meta-vector
+                    line=dict(width=2, color='white'),
+                    symbol='diamond'  # Different symbol to distinguish from meta-vector
+                ),
+                customdata=[f'{anchor_language} = {LANGUAGE_NAMES.get(anchor_language, "Unknown")} (excluded from multilingual set)'],
+                hovertemplate=f'<b>{anchor_language} (Anchor)</b><br>Excluded from multilingual set<br>x: %{{x:.3f}}<br>y: %{{y:.3f}}<extra></extra>'
+            ))
+        
         # Update layout with appropriate title
         if interpolation_used:
             title = f"UMAP Projection at T = {used_temp:.3f} (interpolated)"
@@ -381,11 +385,12 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
         else:
             title = f"UMAP Projection at T = {used_temp:.3f} (closest snapshot)"
         
-        # Add anchor language info to title if applicable
-        if anchor_language and include_anchor:
-            title += f" - {anchor_language} and Meta-Vector highlighted"
-        else:
-            title += " - Meta-Vector highlighted"
+        # Add anchor language info to title
+        if anchor_language:
+            if include_anchor:
+                title += f" - {anchor_language} included in multilingual set"
+            else:
+                title += f" - {anchor_language} excluded from multilingual set (shown separately)"
         if warning_msg:
             title += f"<br>{warning_msg}"
         
@@ -738,29 +743,155 @@ def plot_energy_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figure:
         return go.Figure()
 
 
-def plot_convergence_history(convergence_data: List[Dict[str, Any]], selected_temperature: float = None) -> go.Figure:
+def plot_convergence_summary(convergence_data: List[Dict[str, Any]], tc: float = None) -> go.Figure:
     """
-    Plot convergence history for temperature points.
+    Plot convergence summary across all temperatures.
     
     Args:
         convergence_data: List of convergence data from simulation
-        selected_temperature: Optional specific temperature to highlight
+        tc: Critical temperature
         
+    Returns:
+        Plotly figure showing convergence status across temperatures
+    """
+    fig = go.Figure()
+    
+    # Show summary across all temperatures
+    temperatures = []
+    final_diffs = []
+    statuses = []
+    iterations = []
+    
+    for data in convergence_data:
+        temperatures.append(data['temperature'])
+        final_diffs.append(data['final_diff'])
+        statuses.append(data['status'])
+        iterations.append(data['iterations'])
+    
+    # Check for very small final_diff values that might cause log-scale issues
+    min_diff = min(final_diffs)
+    max_diff = max(final_diffs)
+    
+    # If all diffs are very small, use linear scale instead of log
+    use_log_scale = True
+    if max_diff < 1e-6:
+        use_log_scale = False
+    elif min_diff < 1e-10:
+        # Replace extremely small values with a minimum threshold
+        final_diffs = [max(d, 1e-10) for d in final_diffs]
+    
+    # Color code by status
+    colors = []
+    for status in statuses:
+        if status == 'converged':
+            colors.append('green')
+        elif status == 'plateau':
+            colors.append('orange')
+        elif status == 'diverging':
+            colors.append('red')
+        elif status == 'max_steps':
+            colors.append('purple')
+        else:
+            colors.append('gray')
+    
+    fig.add_trace(go.Scatter(
+        x=temperatures,
+        y=final_diffs,
+        mode='markers',
+        marker=dict(
+            size=8,
+            color=colors,
+            line=dict(width=1, color='black')
+        ),
+        text=[f"T={t:.3f}<br>Status: {s}<br>Iterations: {i}<br>Final diff: {d:.2e}" 
+              for t, s, i, d in zip(temperatures, statuses, iterations, final_diffs)],
+        hovertemplate='<b>%{text}</b><extra></extra>',
+        name='Convergence Summary'
+    ))
+    
+    # Remove the horizontal convergence threshold line
+    # Add vertical Tc line if provided
+    if tc is not None:
+        fig.add_vline(x=tc, line_dash="dash", line_color="red", annotation_text=f"Tc = {tc:.3f}", annotation_position="top left")
+    
+    layout_kwargs = {
+        "title": "Convergence Summary Across Temperatures",
+        "xaxis_title": "Temperature",
+        "yaxis_title": "Final Difference",
+        "showlegend": False,
+        "template": "plotly_dark"
+    }
+    
+    if use_log_scale:
+        layout_kwargs["yaxis_type"] = "log"
+    
+    fig.update_layout(**layout_kwargs)
+    
+    return fig
+
+
+def plot_convergence_history(convergence_data: List[Dict[str, Any]], selected_temperature: float = None, simulation_results: dict = None) -> go.Figure:
+    """
+    Plot convergence history for temperature points.
+    If simulation_results['entropy_evolution_at_tc'] is present, use it for entropy evolution at Tc.
+    Args:
+        convergence_data: List of convergence data from simulation
+        selected_temperature: Optional specific temperature to highlight
+        simulation_results: Full simulation results dict (for entropy_evolution_at_tc)
     Returns:
         Plotly figure showing convergence history
     """
-    # Debug: Print what we're receiving
-    print(f"DEBUG: plot_convergence_history called with {len(convergence_data)} data points")
-    if convergence_data:
-        print(f"DEBUG: First data point keys: {list(convergence_data[0].keys())}")
-        print(f"DEBUG: First data point status: {convergence_data[0].get('status', 'N/A')}")
-        print(f"DEBUG: First data point iterations: {convergence_data[0].get('iterations', 'N/A')}")
-        print(f"DEBUG: First data point convergence_infos length: {len(convergence_data[0].get('convergence_infos', []))}")
-        if convergence_data[0].get('convergence_infos'):
-            print(f"DEBUG: First conv_info keys: {list(convergence_data[0]['convergence_infos'][0].keys())}")
-    
     fig = go.Figure()
-    
+
+    # If entropy_evolution_at_tc is present and not doing a selected_temperature plot, use it
+    if simulation_results is not None and selected_temperature is None and 'entropy_evolution_at_tc' in simulation_results:
+        info = simulation_results['entropy_evolution_at_tc']
+        tc = simulation_results.get('critical_temperature', None)
+        steps = info.get('logged_steps', [])
+        alignments = info.get('alignment_history', [])
+        
+        # Validate data before plotting
+        if steps and alignments and len(steps) > 1 and len(alignments) > 1:
+            entropies = [1.0 - align for align in alignments]
+            fig.add_trace(go.Scatter(
+                x=steps,
+                y=entropies,
+                mode='lines+markers',
+                name=f'Entropy Evolution at Tc = {tc:.3f}' if tc is not None else 'Entropy Evolution at Tc',
+                line=dict(color='red', width=3),
+                marker=dict(size=8)
+            ))
+            
+            # Safe title formatting
+            tc_str = f"{tc:.3f}" if tc is not None else "Unknown"
+            temp_str = f"{info.get('temperature', tc):.3f}" if info.get('temperature') is not None else "Unknown"
+            
+            fig.update_layout(
+                title=f"Entropy Evolution at Critical Temperature (Detected Tc = {tc_str}, Showing T = {temp_str})",
+                xaxis_title="Iteration",
+                yaxis_title="Entropy (1 - Alignment)",
+                showlegend=True
+            )
+            return fig
+        else:
+            # Not enough data for meaningful plot
+            fig.add_annotation(
+                text="Insufficient entropy evolution data at Tc<br>(simulation converged too quickly)",
+                xref="paper", yref="paper",
+                x=0.5, y=0.5,
+                showarrow=False,
+                font=dict(size=14, color="gray")
+            )
+            fig.update_layout(
+                title="Entropy Evolution at Critical Temperature",
+                xaxis_title="Iteration",
+                yaxis_title="Entropy (1 - Alignment)"
+            )
+            return fig
+    elif simulation_results is not None and selected_temperature is None:
+        # entropy_evolution_at_tc not found, fall back to old logic
+        pass
+
     # If a specific temperature is selected, show detailed convergence for that T
     if selected_temperature is not None:
         # Find the closest temperature
@@ -771,106 +902,223 @@ def plot_convergence_history(convergence_data: List[Dict[str, Any]], selected_te
         if data['convergence_infos']:
             # Plot convergence history for the first sweep
             conv_info = data['convergence_infos'][0]
-            if conv_info['diff_history']:
+            if conv_info['alignment_history']:
                 steps = conv_info['logged_steps']
-                diffs = conv_info['diff_history']
+                alignments = conv_info['alignment_history']
+                
+                # Convert alignment to entropy (entropy = 1 - alignment for normalized values)
+                entropies = [1.0 - align for align in alignments]
                 
                 fig.add_trace(go.Scatter(
                     x=steps,
-                    y=diffs,
+                    y=entropies,
                     mode='lines+markers',
-                    name=f'Convergence at T={data["temperature"]:.3f}',
+                    name=f'Entropy Evolution at T={data["temperature"]:.3f}',
                     line=dict(color='blue', width=2),
                     marker=dict(size=6)
                 ))
                 
-                # Add convergence threshold line
-                fig.add_hline(
-                    y=1e-3,
-                    line_dash="dash",
-                    line_color="red",
-                    annotation_text="Convergence Threshold (1e-3)",
-                    annotation_position="top right"
-                )
+                # Add critical temperature marker if this temperature is close to Tc
+                tc = None
+                if hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
+                    tc = st.session_state.critical_temperature
+                
+                if tc is not None and abs(data['temperature'] - tc) < 0.1:
+                    # Find the iteration where entropy stabilizes (closest to final value)
+                    final_entropy = entropies[-1]
+                    stable_idx = len(entropies) - 1
+                    for i, entropy in enumerate(entropies):
+                        if abs(entropy - final_entropy) < 0.01:
+                            stable_idx = i
+                            break
+                    
+                    if stable_idx < len(steps):
+                        fig.add_vline(
+                            x=steps[stable_idx],
+                            line_dash="dash",
+                            line_color="red",
+                            annotation_text=f"Tc reached at iteration {steps[stable_idx]}",
+                            annotation_position="top right"
+                        )
                 
                 fig.update_layout(
-                    title=f"Convergence History at T = {data['temperature']:.3f}",
+                    title=f"Entropy Evolution at T = {data['temperature']:.3f}",
                     xaxis_title="Iteration",
-                    yaxis_title="Difference (||v_new - v_old||/||v_old||)",
-                    yaxis_type="log",
-                    showlegend=True
+                    yaxis_title="Entropy (1 - Alignment)",
+                    showlegend=True,
+                    template="plotly_dark"
                 )
             else:
                 fig.add_annotation(
-                    text=f"No convergence data available for T = {data['temperature']:.3f}",
+                    text=f"No entropy data available for T = {data['temperature']:.3f}",
                     xref="paper", yref="paper",
                     x=0.5, y=0.5, showarrow=False
                 )
         else:
             fig.add_annotation(
-                text=f"No convergence data available for T = {data['temperature']:.3f}",
+                text=f"No entropy data available for T = {data['temperature']:.3f}",
                 xref="paper", yref="paper",
                 x=0.5, y=0.5, showarrow=False
             )
     else:
-        # Show summary across all temperatures
-        temperatures = []
-        final_diffs = []
-        statuses = []
-        iterations = []
+        # Show entropy evolution at critical temperature
+        tc = None
+        if hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
+            tc = st.session_state.critical_temperature
         
-        for data in convergence_data:
-            temperatures.append(data['temperature'])
-            final_diffs.append(data['final_diff'])
-            statuses.append(data['status'])
-            iterations.append(data['iterations'])
-        
-        print(f"DEBUG: Summary data - temperatures: {len(temperatures)}, statuses: {statuses[:5]}...")
-        
-        # Color code by status
-        colors = []
-        for status in statuses:
-            if status == 'converged':
-                colors.append('green')
-            elif status == 'plateau':
-                colors.append('orange')
-            elif status == 'diverging':
-                colors.append('red')
-            elif status == 'max_steps':
-                colors.append('purple')
+        if tc is not None:
+            # Find the closest temperature to Tc
+            temps = [data['temperature'] for data in convergence_data]
+            closest_idx = min(range(len(temps)), key=lambda i: abs(temps[i] - tc))
+            data = convergence_data[closest_idx]
+            
+            if data['convergence_infos']:
+                conv_info = data['convergence_infos'][0]
+                if conv_info['alignment_history']:
+                    steps = conv_info['logged_steps']
+                    alignments = conv_info['alignment_history']
+                    entropies = [1.0 - align for align in alignments]
+                    
+                    fig.add_trace(go.Scatter(
+                        x=steps,
+                        y=entropies,
+                        mode='lines+markers',
+                        name=f'Entropy Evolution at Tc = {tc:.3f}',
+                        line=dict(color='red', width=3),
+                        marker=dict(size=8)
+                    ))
+                    
+                    # Find when entropy stabilizes
+                    final_entropy = entropies[-1]
+                    stable_idx = len(entropies) - 1
+                    for i, entropy in enumerate(entropies):
+                        if abs(entropy - final_entropy) < 0.01:
+                            stable_idx = i
+                            break
+                    
+                    if stable_idx < len(steps):
+                        fig.add_vline(
+                            x=steps[stable_idx],
+                            line_dash="dash",
+                            line_color="orange",
+                            annotation_text=f"Stable at iteration {steps[stable_idx]}",
+                            annotation_position="top right"
+                        )
+                    
+                    fig.update_layout(
+                        title=f"Entropy Evolution at Critical Temperature (Tc = {tc:.3f})",
+                        xaxis_title="Iteration",
+                        yaxis_title="Entropy (1 - Alignment)",
+                        showlegend=True,
+                        template="plotly_dark"
+                    )
+                else:
+                    fig.add_annotation(
+                        text=f"No entropy data available at Tc = {tc:.3f}",
+                        xref="paper", yref="paper",
+                        x=0.5, y=0.5, showarrow=False
+                    )
             else:
-                colors.append('gray')
-        
-        fig.add_trace(go.Scatter(
-            x=temperatures,
-            y=final_diffs,
-            mode='markers',
-            marker=dict(
-                size=8,
-                color=colors,
-                line=dict(width=1, color='black')
-            ),
-            text=[f"T={t:.3f}<br>Status: {s}<br>Iterations: {i}<br>Final diff: {d:.2e}" 
-                  for t, s, i, d in zip(temperatures, statuses, iterations, final_diffs)],
-            hovertemplate='<b>%{text}</b><extra></extra>',
-            name='Convergence Summary'
-        ))
-        
-        # Add convergence threshold line
-        fig.add_hline(
-            y=1e-3,
-            line_dash="dash",
-            line_color="red",
-            annotation_text="Convergence Threshold",
-            annotation_position="top right"
-        )
-        
-        fig.update_layout(
-            title="Convergence Summary Across Temperatures",
-            xaxis_title="Temperature",
-            yaxis_title="Final Difference",
-            yaxis_type="log",
-            showlegend=False
-        )
+                fig.add_annotation(
+                    text=f"No convergence data available at Tc = {tc:.3f}",
+                    xref="paper", yref="paper",
+                    x=0.5, y=0.5, showarrow=False
+                )
+        else:
+            fig.add_annotation(
+                text="Critical temperature not detected - run simulation first",
+                xref="paper", yref="paper",
+                x=0.5, y=0.5, showarrow=False
+            )
     
     return fig 
+
+def plot_entropy_vs_correlation_length(simulation_results: Dict[str, Any]) -> go.Figure:
+    """
+    Plot entropy vs correlation length with Tc marker
+    
+    Args:
+        simulation_results: Dictionary containing metrics and critical temperature
+        
+    Returns:
+        plotly.graph_objects.Figure: Interactive entropy vs correlation length plot
+    """
+    try:
+        # Check if required data exists
+        if 'correlation_length' not in simulation_results:
+            logger.warning("Missing 'correlation_length' in simulation_results")
+            return go.Figure()
+        
+        # Get entropy data, fallback to 1-alignment if entropy not available
+        entropy = None
+        if 'entropy' in simulation_results:
+            entropy = simulation_results['entropy']
+        elif 'alignment' in simulation_results:
+            entropy = 1.0 - np.array(simulation_results['alignment'])
+        else:
+            logger.warning("Missing both 'entropy' and 'alignment' in simulation_results")
+            return go.Figure()
+        
+        correlation_length = simulation_results['correlation_length']
+        
+        # Check for valid data
+        if len(entropy) == 0 or len(correlation_length) == 0:
+            logger.warning("Empty entropy or correlation length data")
+            return go.Figure()
+        
+        # Filter out NaN values
+        valid_mask = np.isfinite(entropy) & np.isfinite(correlation_length)
+        if not np.any(valid_mask):
+            logger.warning("No valid (finite) data points for entropy vs correlation length plot")
+            return go.Figure()
+        
+        valid_entropy = entropy[valid_mask]
+        valid_corr = correlation_length[valid_mask]
+        
+        # Create the main plot
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=valid_corr,
+            y=valid_entropy,
+            mode='lines+markers',
+            name='Entropy vs Correlation Length',
+            line=dict(color='#9467bd', width=2),
+            marker=dict(size=6)
+        ))
+        
+        # Add critical temperature marker if available
+        tc = None
+        if 'critical_temperature' in simulation_results:
+            tc = simulation_results['critical_temperature']
+        elif hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
+            tc = st.session_state.critical_temperature
+        
+        if tc is not None and 'temperatures' in simulation_results:
+            temperatures = simulation_results['temperatures']
+            # Find the index closest to Tc
+            tc_idx = np.argmin(np.abs(temperatures - tc))
+            if tc_idx < len(valid_corr):
+                fig.add_trace(go.Scatter(
+                    x=[valid_corr[tc_idx]],
+                    y=[valid_entropy[tc_idx]],
+                    mode='markers',
+                    name=f'Tc = {tc:.3f}',
+                    marker=dict(size=12, color='red', symbol='star'),
+                    hovertemplate=f"<b>Tc = {tc:.3f}</b><br>ξ=%{{x:.2f}}<br>Entropy=%{{y:.2f}}<extra></extra>"
+                ))
+        
+        # Update layout
+        fig.update_layout(
+            title="Entropy vs Correlation Length",
+            xaxis_title="Correlation Length (ξ)",
+            yaxis_title="Entropy",
+            template="plotly_dark",
+            showlegend=True,
+            hovermode='x unified'
+        )
+        
+        return fig
+        
+    except Exception as e:
+        logger.error(f"Error creating entropy vs correlation length plot: {e}")
+        return go.Figure() 

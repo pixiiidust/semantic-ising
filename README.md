@@ -27,11 +27,17 @@ This simulator investigates the **Platonic representation hypothesis**: do words
 
 - **🌍 Multilingual Support**: 70+ languages with LaBSE embeddings
 - **🔥 Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
-- **🎯 Critical Temperature Detection**: Binder cumulant method for phase transition detection
+- **🎯 Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
 - **🔗 Anchor Language Analysis**: Single-phase vs two-phase experimental designs
 - **📊 Interactive Visualizations**: UMAP projections, entropy curves, correlation analysis
-- **📈 Advanced Metrics**: Procrustes distance, CKA similarity, EMD distance
+- **📈 Advanced Metrics**: Cosine distance and similarity for anchor comparison
 - **🖥️ Streamlit UI**: User-friendly interface with real-time simulation monitoring
+
+## 📝 Recent Improvements
+- UI and backend are now tightly synchronized for critical temperature (Tc) display: the value shown in the UI and the vertical line in charts are always consistent.
+- The convergence summary chart now only shows the vertical Tc line, improving clarity.
+- Anchor comparison and simulation tabs have been cleaned up for a more professional, user-friendly experience.
+- All debug output has been removed from the user interface.
 
 ## 🚀 Quick Start
 
@@ -65,8 +71,8 @@ streamlit run app.py
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/semantic-ising-simulator.git
-cd semantic-ising-simulator
+git clone https://github.com/pixiiidust/semantic-ising.git
+cd semantic-ising
 
 # Install dependencies
 pip install -r requirements.txt
@@ -135,8 +141,8 @@ The simulator applies statistical physics concepts to semantic analysis:
 - **Alignment**: Average cosine similarity between vectors (0-1 scale)
 - **Entropy**: Shannon entropy of vector distribution
 - **Correlation Length**: Characteristic length scale of correlations
-- **CKA Similarity**: Centered Kernel Alignment for representation similarity
-- **Procrustes Distance**: Structural alignment between vector sets
+- **Cosine Distance**: Primary semantic distance metric for anchor comparison (0-1, lower is better)
+- **Cosine Similarity**: Directional similarity for anchor comparison (0-1, higher is better)
 
 ### Phase Transition Detection
 
@@ -237,10 +243,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [LaBSE: Language-agnostic BERT Sentence Embedding](https://arxiv.org/abs/2007.01852)
 - [Ising Model and Phase Transitions](https://en.wikipedia.org/wiki/Ising_model)
-- [Binder Cumulant Method](https://en.wikipedia.org/wiki/Binder_cumulant)
+- [Correlation Length in Critical Phenomena](https://en.wikipedia.org/wiki/Correlation_length)
 
 ---
 
 **Ready to discover universal semantic structures?** 🚀
 
-[Get Started](#quick-start) | [View Examples](examples/) | [Report Issues](https://github.com/your-username/semantic-ising-simulator/issues)
+[Get Started](#quick-start) | [View Examples](examples/) | [Report Issues](https://github.com/pixiiidust/semantic-ising/issues) | [Discussions](https://github.com/pixiiidust/semantic-ising/discussions)

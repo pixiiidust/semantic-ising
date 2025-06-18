@@ -143,7 +143,7 @@ def render_anchor_config() -> Tuple[str, bool]:
         
         # Include anchor in dynamics toggle
         include_anchor = st.checkbox(
-            "Include anchor in Ising dynamics",
+            "Include anchor in multilingual set",
             value=False,
             help="✅ Include: Anchor participates in simulation\n❌ Exclude: Anchor compared to multilingual result"
         )
@@ -283,11 +283,8 @@ def render_anchor_comparison_summary(comparison_metrics: Dict[str, float]) -> No
         
         # Define metric descriptions
         metric_descriptions = {
-            'procrustes_distance': 'Lower = better structural alignment',
-            'cka_similarity': 'Higher = stronger similarity (0-1 scale)',
-            'emd_distance': 'Lower = more similar distributions',
-            'kl_divergence': 'Lower = more similar probability distributions',
-            'cosine_similarity': 'Higher = more similar vector directions'
+            'cosine_distance': 'Primary semantic distance metric (0-1, lower is better)',
+            'cosine_similarity': 'Directional similarity (0-1, higher is better)'
         }
         
         # Create columns for metrics

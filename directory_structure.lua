@@ -591,32 +591,8 @@ return {
   
   -- 16. UI components (Phase 9 - COMPLETE)
   ["ui/charts.py"] = {
-    function = "plot_entropy_vs_temperature",
-    purpose = "Plot entropy vs temperature with Tc marker",
-    depends_on = {},
-    produces = {"plotly_figure"},
-    status = "COMPLETE"
-  },
-  
-  ["ui/charts.py"] = {
-    function = "plot_full_umap_projection",
-    purpose = "Plot full UMAP projection of vectors at Tc with anchor highlighting",
-    depends_on = {},
-    produces = {"plotly_figure"},
-    status = "COMPLETE"
-  },
-  
-  ["ui/charts.py"] = {
-    function = "plot_correlation_decay",
-    purpose = "Plot correlation decay vs distance (log-log)",
-    depends_on = {},
-    produces = {"plotly_figure"},
-    status = "COMPLETE"
-  },
-  
-  ["ui/charts.py"] = {
-    function = "plot_correlation_length_vs_temperature",
-    purpose = "Plot correlation length vs temperature with Tc marker",
+    function = "plot_entropy_vs_temperature, plot_full_umap_projection, plot_correlation_decay, plot_correlation_length_vs_temperature, plot_convergence_summary, ...",
+    purpose = "Plotly chart generation for UI. Convergence summary chart now only shows the vertical Tc line (critical temperature), with the convergence threshold line removed. Improved synchronization of Tc between backend and UI.",
     depends_on = {},
     produces = {"plotly_figure"},
     status = "COMPLETE"
@@ -640,15 +616,15 @@ return {
   
   ["ui/tabs/simulation.py"] = {
     function = "render_simulation_tab",
-    purpose = "Updated simulation tab with anchor configuration and metrics export",
-    depends_on = {"ui/components.py", "main.py"},
+    purpose = "Simulation tab with results and convergence analysis. Tc value is now always synchronized between UI display and chart. Debug output removed.",
+    depends_on = {"ui/components.py", "ui/charts.py"},
     produces = {"simulation_display"},
     status = "COMPLETE"
   },
   
   ["ui/tabs/anchor_comparison.py"] = {
     function = "render_anchor_comparison_tab",
-    purpose = "New tab for anchor comparison results with UMAP visualization",
+    purpose = "Anchor comparison tab with collapsible experiment configuration and interpretation sections. UI cleaned up, redundant metrics removed, and debug output eliminated.",
     depends_on = {"ui/charts.py"},
     produces = {"comparison_display"},
     status = "COMPLETE"
