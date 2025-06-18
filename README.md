@@ -4,16 +4,22 @@ A multilingual semantic Ising model simulator that:
 * explores how semantically identical words across languages potentially converge in their embedding space under Ising dynamics. 
 * visualizes multilingual embedding alignment and reveals latent structure as the language space approaches critical temperature.
 
+---
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Experimental Designs](#experimental-designs)
 - [Scientific Background](#scientific-background)
-- [Project Structure](#project-structure)
+- [Recent Improvements](#recent-improvements)
 - [Contributing](#contributing)
+
+---
 
 ## 🎯 Overview
 
@@ -26,14 +32,29 @@ A multilingual semantic Ising model simulator that:
 - What is the critical temperature where semantic phase transitions occur?
 - How do anchor languages relate to emergent multilingual semantic structures?
 
-## Screenshots
+---
+
+## ✨ Features
+
+- **🌍 Multilingual Support**: 70+ languages with LaBSE embeddings
+- **🔥 Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
+- **🎯 Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
+- **🔗 Anchor Language Analysis**: Single-phase vs two-phase experimental designs
+- **📊 Interactive Visualizations**: UMAP projections, entropy curves, correlation analysis
+- **📈 Advanced Metrics**: Cosine distance and similarity for anchor comparison
+- **🖥️ Streamlit UI**: User-friendly interface with real-time simulation monitoring
+
+---
+
+## 📸 Screenshots
+
 ### Visualize multilingual concept mappings
 <img src="https://github.com/user-attachments/assets/29af9400-1be4-49c2-92b5-cd2925a001ac" width="100%"/>
-<br>
 
 ### Identify critical convergences across languages from alignment simulations
 <img src="https://github.com/user-attachments/assets/4ed4c23b-0814-427f-b271-32959b6bb7e6" width="100%"/>
-<br>
+
+---
 
 ## 🚀 Quick Start
 
@@ -52,7 +73,8 @@ streamlit run app.py
 ### 3. Configure Your Experiment
 
 #### 📄 Ensure Correct File Formats
-JSON Structure Example
+
+**JSON Structure Example:**
 ```json
 {
   "en": "dog",
@@ -67,11 +89,12 @@ JSON Structure Example
   "ko": "개"
 }
 ```
-#### File Naming Convention
+
+**File Naming Convention:**
 - **Basic format**: `{concept}_translations.json`
 - **Extended format**: `{concept}_translations_{N}.json` (where N = number of languages)
 
-#### File Properties
+**File Properties:**
 - **Encoding**: UTF-8
 - **Format**: Valid JSON
 - **Language codes**: ISO 639-1 standard
@@ -83,6 +106,8 @@ JSON Structure Example
 2. **Set Temperature Range**: Use auto-estimate or set manually (0.1-5.0)
 3. **Configure Anchor**: Choose anchor language and include/exclude from dynamics
 4. **Run Simulation**: Click "Run Simulation" and watch the magic happen!
+
+---
 
 ## 📦 Installation
 
@@ -113,17 +138,17 @@ docker build -t semantic-ising .
 docker run -p 8501:8501 semantic-ising
 ```
 
-## 🎮 Dashboard Guide
+---
 
-### Web Interface
+## 🎮 Usage
+
+### Web Interface (Dashboard)
 
 1. **Overview Tab**: Learn about the simulator and scientific background
 2. **Simulation Results**: Run experiments and view real-time metrics
 3. **Anchor Comparison**: Analyze anchor language relationships
 
-## 🎮 CLI Guide
-
-### Command Line
+### Command Line Interface
 
 ```bash
 # Run simulation with custom parameters
@@ -133,16 +158,18 @@ python main.py --concept dog --encoder LaBSE --t-min 0.1 --t-max 3.0 --t-steps 5
 python main.py --config my_experiment.yaml
 ```
 
-## Experimental Designs
+---
+
+## 🔬 Experimental Designs
 
 Two modes to study multilingual semantic structure:
 
-### 🔬 **Single-Phase Mode** (`include_anchor=True`)
+### **Single-Phase Mode** (`include_anchor=True`)
 **Question**: "Does the anchor language share semantic space with other languages?"
 - Anchor participates in Ising dynamics with all languages
 - **Use when**: You want to see how anchor influences collective dynamics
 
-### 🔬 **Two-Phase Mode** (`include_anchor=False`)
+### **Two-Phase Mode** (`include_anchor=False`)
 **Question**: "How does the anchor compare to the emergent multilingual structure?"
 - Anchor excluded from dynamics, compared to result at critical temperature
 - **Use when**: You want to test anchor alignment with emergent structure
@@ -150,6 +177,8 @@ Two modes to study multilingual semantic structure:
 #### 📊 **Key Differences**
 - **Single-Phase**: Higher Tc, anchor visible in UMAP
 - **Two-Phase**: Lower Tc, anchor highlighted separately in UMAP
+
+---
 
 ## 🧠 Scientific Background
 
@@ -176,21 +205,16 @@ The simulator applies statistical physics concepts to semantic analysis:
 
 - All UI and analysis now annotate Tc at the knee, matching physical expectations.
 
-## ✨ Features
-
-- ** Multilingual Support**: 70+ languages with LaBSE embeddings
-- ** Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
-- ** Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
-- ** Anchor Language Analysis**: Single-phase vs two-phase experimental designs
-- ** Interactive Visualizations**: UMAP projections, entropy curves, correlation analysis
-- ** Advanced Metrics**: Cosine distance and similarity for anchor comparison
-- **🖥 Streamlit UI**: User-friendly interface with real-time simulation monitoring
+---
 
 ## 📝 Recent Improvements
+
 - UI and backend are now tightly synchronized for critical temperature (Tc) display: the value shown in the UI and the vertical line in charts are always consistent.
 - The convergence summary chart now only shows the vertical Tc line, improving clarity.
 - Anchor comparison and simulation tabs have been cleaned up for a more professional, user-friendly experience.
 - All debug output has been removed from the user interface.
+
+---
 
 ## 🤝 Contributing
 
