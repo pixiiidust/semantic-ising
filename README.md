@@ -53,7 +53,7 @@ streamlit run app.py
 
 #### 📄 Ensure Correct File Formats
 
-### JSON Structure
+### JSON Structure Example
 ```json
 {
   "en": "dog",
