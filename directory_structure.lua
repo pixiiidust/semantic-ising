@@ -31,6 +31,31 @@
 -- 15. Export and I/O (Phase 8)
 -- 16. UI Components (Phase 9 - COMPLETE)
 
+## 📁 Project Structure
+
+```
+semantic-ising/
+├── app.py                 # Main Streamlit application
+├── main.py               # CLI interface
+├── config/               # Configuration management
+│   ├── defaults.yaml     # Default parameters
+│   └── validator.py      # Config validation
+├── core/                 # Core simulation engine
+│   ├── simulation.py     # Temperature sweeps & Ising updates
+│   ├── embeddings.py     # Multilingual embedding pipeline
+│   ├── phase_detection.py # Critical temperature detection
+│   ├── post_analysis.py  # Post-simulation analysis
+│   └── ...               # Other core modules
+├── ui/                   # User interface components
+│   ├── charts.py         # Interactive visualizations
+│   ├── components.py     # Reusable UI components
+│   └── tabs/             # Tab-specific components
+├── data/                 # Data and embeddings
+│   ├── concepts/         # Multilingual concept files
+│   └── embeddings/       # Cached embeddings
+├── tests/                # Comprehensive test suite
+└── export/               # Export and I/O utilities
+```
 return {
   -- 1. Configuration management (Phase 1 - API locked v0.2)
   ["config/validator.py"] = {

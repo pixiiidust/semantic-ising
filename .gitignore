@@ -42,6 +42,7 @@ outputs/
 *.csv
 *.json
 !data/*.json
+!data/**/*.json
 
 # Temporary files (file hygiene)
 temp_*
