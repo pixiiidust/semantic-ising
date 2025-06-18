@@ -43,7 +43,7 @@ A multilingual semantic Ising model simulator that:
 pip install -r requirements.txt
 ```
 
-### 2. Run the Simulator
+### 2. Run the Simulator Dashboard
 
 ```bash
 streamlit run app.py
@@ -51,9 +51,8 @@ streamlit run app.py
 
 ### 3. Configure Your Experiment
 
-### 📄 Ensure Correct File Formats
-
-#### JSON Structure Example
+#### 📄 Ensure Correct File Formats
+JSON Structure Example
 ```json
 {
   "en": "dog",
@@ -77,6 +76,8 @@ streamlit run app.py
 - **Format**: Valid JSON
 - **Language codes**: ISO 639-1 standard
 - **Translations**: Single words or short phrases
+
+### 4. Usage Steps
 
 1. **Select Concept**: Choose a concept (e.g., "dog", "tree", "house")
 2. **Set Temperature Range**: Use auto-estimate or set manually (0.1-5.0)
@@ -112,13 +113,15 @@ docker build -t semantic-ising .
 docker run -p 8501:8501 semantic-ising
 ```
 
-## 🎮 Usage
+## 🎮 Dashboard Guide
 
 ### Web Interface
 
 1. **Overview Tab**: Learn about the simulator and scientific background
 2. **Simulation Results**: Run experiments and view real-time metrics
 3. **Anchor Comparison**: Analyze anchor language relationships
+
+## 🎮 CLI Guide
 
 ### Command Line
 
@@ -130,16 +133,16 @@ python main.py --concept dog --encoder LaBSE --t-min 0.1 --t-max 3.0 --t-steps 5
 python main.py --config my_experiment.yaml
 ```
 
-### Experimental Designs
+## Experimental Designs
 
 Two modes to study multilingual semantic structure:
 
-#### 🔬 **Single-Phase Mode** (`include_anchor=True`)
+### 🔬 **Single-Phase Mode** (`include_anchor=True`)
 **Question**: "Does the anchor language share semantic space with other languages?"
 - Anchor participates in Ising dynamics with all languages
 - **Use when**: You want to see how anchor influences collective dynamics
 
-#### 🔬 **Two-Phase Mode** (`include_anchor=False`)
+### 🔬 **Two-Phase Mode** (`include_anchor=False`)
 **Question**: "How does the anchor compare to the emergent multilingual structure?"
 - Anchor excluded from dynamics, compared to result at critical temperature
 - **Use when**: You want to test anchor alignment with emergent structure
