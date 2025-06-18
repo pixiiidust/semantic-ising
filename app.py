@@ -332,6 +332,11 @@ def run_simulation_workflow(concept: str,
         status_text.text("⚙️ Running temperature sweep...")
         progress_bar.progress(40)
         
+        # Show expected duration
+        n_temps = len(T_range)
+        n_sweeps = 10  # n_sweeps_per_temperature
+        st.info(f"⏱️ Expected duration: ~{n_temps * n_sweeps * 2} seconds (processing {n_temps} temperatures × {n_sweeps} sweeps each)")
+        
         # Run simulation with config parameters
         simulation_results = run_temperature_sweep(
             dynamics_embeddings, 
@@ -341,11 +346,15 @@ def run_simulation_workflow(concept: str,
             sim_params=sim_params
         )
         
+        # Update status to show simulation completed
+        status_text.text("✅ Temperature sweep completed!")
+        progress_bar.progress(60)
+        
         # Add dynamics vectors to simulation results for post-analysis
         simulation_results['dynamics_vectors'] = dynamics_embeddings
         
         # Add languages to simulation results for UMAP plotting
-        simulation_results['languages'] = languages
+        simulation_results['languages'] = dynamics_languages
         
         # Debug: Check what's in simulation_results
         st.write(f"Debug: Simulation results keys: {list(simulation_results.keys())}")
