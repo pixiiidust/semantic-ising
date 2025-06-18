@@ -1,7 +1,8 @@
 # Semantic Ising Simulator (Alpha Ver.)
 
-* A multilingual semantic Ising model simulator that explores how semantically identical words across languages potentially converge in their embedding space under Ising dynamics. 
-* The simulator visualizes multilingual embedding alignment and reveals latent structure as the language space approaches critical temperature.
+A multilingual semantic Ising model simulator that: 
+* explores how semantically identical words across languages potentially converge in their embedding space under Ising dynamics. 
+* visualizes multilingual embedding alignment and reveals latent structure as the language space approaches critical temperature.
 
 ## 📋 Table of Contents
 
@@ -17,8 +18,9 @@
 
 ## 🎯 Overview
 
-* This simulator is inspired by the **Platonic representation hypothesis**: do words meaning "dog" in 70+ languages share a common latent semantic structure? 
+* Do words meaning "dog" in 70+ languages share a common latent semantic structure? 
 * Using Ising model dynamics, we simulate semantic phase transitions and detect critical temperatures where universal semantic patterns emerge.
+* Inspired by the **Platonic representation hypothesis** 
 
 **Key Questions:**
 - Do semantically identical words across languages converge in embedding space?
