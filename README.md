@@ -1,7 +1,8 @@
 # Semantic Ising Simulator (Alpha Ver.)
 
-A multilingual semantic Ising model simulator that explores how semantically identical words across languages potentially converge in their embedding space under Ising dynamics. 
-The simulator visualizes multilingual embedding alignment and reveals latent structure as the language space approaches critical temperature.
+A multilingual semantic Ising model simulator that: 
+* explores how semantically identical words across languages potentially converge in their embedding space under Ising dynamics. 
+* visualizes multilingual embedding alignment and reveals latent structure as the language space approaches critical temperature.
 
 ## 📋 Table of Contents
 
@@ -17,31 +18,16 @@ The simulator visualizes multilingual embedding alignment and reveals latent str
 
 ## 🎯 Overview
 
-This simulator investigates the **Platonic representation hypothesis**: do words meaning "dog" in 70+ languages share a common latent semantic structure? Using Ising model dynamics, we simulate semantic phase transitions and detect critical temperatures where universal semantic patterns emerge.
+* Do words meaning "dog" in 70+ languages share a common latent semantic structure? 
+* Using Ising model dynamics, we simulate semantic phase transitions and detect critical temperatures where universal semantic patterns emerge.
+* Inspired by the **Platonic representation hypothesis** 
 
 **Key Questions:**
 - Do semantically identical words across languages converge in embedding space?
 - What is the critical temperature where semantic phase transitions occur?
 - How do anchor languages relate to emergent multilingual semantic structures?
 
-## ✨ Features
-
-- ** Multilingual Support**: 70+ languages with LaBSE embeddings
-- ** Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
-- ** Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
-- ** Anchor Language Analysis**: Single-phase vs two-phase experimental designs
-- ** Interactive Visualizations**: UMAP projections, entropy curves, correlation analysis
-- ** Advanced Metrics**: Cosine distance and similarity for anchor comparison
-- **🖥 Streamlit UI**: User-friendly interface with real-time simulation monitoring
-
-## 📝 Recent Improvements
-- UI and backend are now tightly synchronized for critical temperature (Tc) display: the value shown in the UI and the vertical line in charts are always consistent.
-- The convergence summary chart now only shows the vertical Tc line, improving clarity.
-- Anchor comparison and simulation tabs have been cleaned up for a more professional, user-friendly experience.
-- All debug output has been removed from the user interface.
-
-## Screenshots Sneakpeak
-
+## Screenshots
 ### Visualize multilingual concept mappings
 <img src="https://github.com/user-attachments/assets/29af9400-1be4-49c2-92b5-cd2925a001ac" width="100%"/>
 <br>
@@ -65,6 +51,34 @@ streamlit run app.py
 ```
 
 ### 3. Configure Your Experiment
+
+#### 📄 Ensure Correct File Formats
+
+### JSON Structure
+```json
+{
+  "en": "dog",
+  "es": "perro",
+  "fr": "chien",
+  "de": "hund",
+  "it": "cane",
+  "pt": "cachorro",
+  "ru": "собака",
+  "zh": "狗",
+  "ja": "犬",
+  "ko": "개"
+}
+```
+
+### File Naming Convention
+- **Basic format**: `{concept}_translations.json`
+- **Extended format**: `{concept}_translations_{N}.json` (where N = number of languages)
+
+### File Properties
+- **Encoding**: UTF-8
+- **Format**: Valid JSON
+- **Language codes**: ISO 639-1 standard
+- **Translations**: Single words or short phrases
 
 1. **Select Concept**: Choose a concept (e.g., "dog", "tree", "house")
 2. **Set Temperature Range**: Use auto-estimate or set manually (0.1-5.0)
@@ -161,31 +175,21 @@ The simulator applies statistical physics concepts to semantic analysis:
 
 - All UI and analysis now annotate Tc at the knee, matching physical expectations.
 
-## 📁 Project Structure
+## ✨ Features
 
-```
-semantic-ising/
-├── app.py                 # Main Streamlit application
-├── main.py               # CLI interface
-├── config/               # Configuration management
-│   ├── defaults.yaml     # Default parameters
-│   └── validator.py      # Config validation
-├── core/                 # Core simulation engine
-│   ├── simulation.py     # Temperature sweeps & Ising updates
-│   ├── embeddings.py     # Multilingual embedding pipeline
-│   ├── phase_detection.py # Critical temperature detection
-│   ├── post_analysis.py  # Post-simulation analysis
-│   └── ...               # Other core modules
-├── ui/                   # User interface components
-│   ├── charts.py         # Interactive visualizations
-│   ├── components.py     # Reusable UI components
-│   └── tabs/             # Tab-specific components
-├── data/                 # Data and embeddings
-│   ├── concepts/         # Multilingual concept files
-│   └── embeddings/       # Cached embeddings
-├── tests/                # Comprehensive test suite
-└── export/               # Export and I/O utilities
-```
+- ** Multilingual Support**: 70+ languages with LaBSE embeddings
+- ** Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
+- ** Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
+- ** Anchor Language Analysis**: Single-phase vs two-phase experimental designs
+- ** Interactive Visualizations**: UMAP projections, entropy curves, correlation analysis
+- ** Advanced Metrics**: Cosine distance and similarity for anchor comparison
+- **🖥 Streamlit UI**: User-friendly interface with real-time simulation monitoring
+
+## 📝 Recent Improvements
+- UI and backend are now tightly synchronized for critical temperature (Tc) display: the value shown in the UI and the vertical line in charts are always consistent.
+- The convergence summary chart now only shows the vertical Tc line, improving clarity.
+- Anchor comparison and simulation tabs have been cleaned up for a more professional, user-friendly experience.
+- All debug output has been removed from the user interface.
 
 ## 🤝 Contributing
 
