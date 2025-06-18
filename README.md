@@ -25,19 +25,29 @@ This simulator investigates the **Platonic representation hypothesis**: do words
 
 ## ✨ Features
 
-- **🌍 Multilingual Support**: 70+ languages with LaBSE embeddings
-- **🔥 Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
-- **🎯 Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
-- **🔗 Anchor Language Analysis**: Single-phase vs two-phase experimental designs
-- **📊 Interactive Visualizations**: UMAP projections, entropy curves, correlation analysis
-- **📈 Advanced Metrics**: Cosine distance and similarity for anchor comparison
-- **🖥️ Streamlit UI**: User-friendly interface with real-time simulation monitoring
+- ** Multilingual Support**: 70+ languages with LaBSE embeddings
+- ** Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
+- ** Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
+- ** Anchor Language Analysis**: Single-phase vs two-phase experimental designs
+- ** Interactive Visualizations**: UMAP projections, entropy curves, correlation analysis
+- ** Advanced Metrics**: Cosine distance and similarity for anchor comparison
+- **🖥 Streamlit UI**: User-friendly interface with real-time simulation monitoring
 
 ## 📝 Recent Improvements
 - UI and backend are now tightly synchronized for critical temperature (Tc) display: the value shown in the UI and the vertical line in charts are always consistent.
 - The convergence summary chart now only shows the vertical Tc line, improving clarity.
 - Anchor comparison and simulation tabs have been cleaned up for a more professional, user-friendly experience.
 - All debug output has been removed from the user interface.
+
+## Screenshots Sneakpeak
+
+### Visualize multilingual concept mappings 
+<img src="https://github.com/user-attachments/assets/70fbc093-9f92-4b7b-91ed-6400d2e87f36" width="100%"/>
+<br>
+
+### Identify critical convergences across languages from alignment simulations
+<img src="https://github.com/user-attachments/assets/7e5d06da-90b6-44ec-b56f-560579f34073" width="100%"/>
+<br>
 
 ## 🚀 Quick Start
 
