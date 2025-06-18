@@ -51,9 +51,9 @@ streamlit run app.py
 
 ### 3. Configure Your Experiment
 
-#### 📄 Ensure Correct File Formats
+### 📄 Ensure Correct File Formats
 
-### JSON Structure Example
+#### JSON Structure Example
 ```json
 {
   "en": "dog",
@@ -68,12 +68,11 @@ streamlit run app.py
   "ko": "개"
 }
 ```
-
-### File Naming Convention
+#### File Naming Convention
 - **Basic format**: `{concept}_translations.json`
 - **Extended format**: `{concept}_translations_{N}.json` (where N = number of languages)
 
-### File Properties
+#### File Properties
 - **Encoding**: UTF-8
 - **Format**: Valid JSON
 - **Language codes**: ISO 639-1 standard
