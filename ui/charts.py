@@ -400,7 +400,10 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
             yaxis_title="UMAP 2",
             template="plotly_dark",
             showlegend=True,
-            hovermode='closest'
+            hovermode='closest',
+            height=600,  # Make chart taller
+            width=800,   # Set reasonable width
+            margin=dict(l=50, r=50, t=80, b=50)  # Adjust margins for better proportions
         )
         
         return fig
