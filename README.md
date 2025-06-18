@@ -2,7 +2,7 @@
 
 A multilingual semantic Ising model simulator that: 
 * explores how semantically identical words across languages potentially converge in their embedding space under Ising dynamics. 
-* visualizes multilingual embedding alignment and reveals latent structure as the language space approaches critical temperature.
+* visualizes multilingual alignments to reveal latent structure approaching critical temperature.
 
 ---
 
