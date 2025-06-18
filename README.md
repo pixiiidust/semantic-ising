@@ -224,4 +224,4 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 **Ready to discover universal semantic structures?** 🚀
 
-[Get Started](#quick-start) | [View Examples](examples/) | [Report Issues](https://github.com/pixiiidust/semantic-ising/issues) | [Discussions](https://github.com/pixiiidust/semantic-ising/discussions)
+[Report Issues](https://github.com/pixiiidust/semantic-ising/issues) | [Discussions](https://github.com/pixiiidust/semantic-ising/discussions)
