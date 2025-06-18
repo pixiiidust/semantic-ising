@@ -47,7 +47,7 @@ This simulator investigates the **Platonic representation hypothesis**: do words
 <br>
 
 ### Identify critical convergences across languages from alignment simulations
-<img src="https://github.com/user-attachments/assets/7e5d06da-90b6-44ec-b56f-560579f34073" width="100%"/>
+<img src="https://github.com/user-attachments/assets/4ed4c23b-0814-427f-b271-32959b6bb7e6" width="100%"/>
 <br>
 
 ## 🚀 Quick Start
