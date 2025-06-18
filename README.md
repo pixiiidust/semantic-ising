@@ -42,8 +42,8 @@ This simulator investigates the **Platonic representation hypothesis**: do words
 
 ## Screenshots Sneakpeak
 
-### Visualize multilingual concept mappings 
-<img src="https://github.com/user-attachments/assets/70fbc093-9f92-4b7b-91ed-6400d2e87f36" width="100%"/>
+### Visualize multilingual concept mappings
+<img src="https://github.com/user-attachments/assets/29af9400-1be4-49c2-92b5-cd2925a001ac" width="100%"/>
 <br>
 
 ### Identify critical convergences across languages from alignment simulations
