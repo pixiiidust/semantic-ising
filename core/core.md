@@ -128,14 +128,19 @@ The core modules implement the scientific foundation of the Semantic Ising Simul
 **Purpose**: Advanced comparison metrics for anchor language analysis
 
 **Key Functions**:
-- `compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, metrics)` - Comprehensive comparison
-- `compute_procrustes_distance(vectors_a, vectors_b)` - Structural alignment
-- `compute_cka_similarity(vectors_a, vectors_b)` - Centered Kernel Alignment
-- `compute_emd_distance(vectors_a, vectors_b)` - Earth Mover's Distance
-- `compute_kl_divergence(vectors_a, vectors_b)` - KL divergence
+- `compare_anchor_to_multilingual(anchor_vectors, multilingual_vectors, tc, metrics)` - Compare anchor vector to meta-vector of multilingual set using cosine distance as primary metric
+- `compute_procrustes_distance(vectors_a, vectors_b)` - Structural alignment (requires multiple vectors)
+- `compute_cka_similarity(vectors_a, vectors_b)` - Centered Kernel Alignment (requires multiple vectors)
+- `compute_emd_distance(vectors_a, vectors_b)` - Earth Mover's Distance (requires multiple vectors)
+- `compute_kl_divergence(vectors_a, vectors_b)` - KL divergence (requires multiple vectors)
+
+**Primary Metric**:
+- **Cosine Distance**: The community standard for semantic similarity in modern embeddings. Focuses on vector orientation rather than length, making it invariant to normalization, temperature scaling, and L2 regularization.
 
 **Features**:
-- Multiple similarity metrics for comprehensive analysis
+- Meta-vector comparison: Anchor compared to centroid of multilingual set
+- Cosine distance as primary semantic metric
+- Set-based metrics (Procrustes, CKA, EMD, KL) set to NaN for single vector comparison
 - Automatic interpretation and scoring
 - Integration with post-analysis workflow
 
@@ -272,3 +277,13 @@ pytest tests/test_*.py -v
 - **LaBSE**: Language-agnostic BERT sentence embeddings
 - **UMAP**: Dimensionality reduction for visualization
 - **Procrustes Analysis**: Structural alignment method 
+
+## Phase Detection (core/phase_detection.py)
+
+- **find_critical_temperature**: Now detects Tc using the log(ξ) derivative (knee in correlation length vs temperature) as the default method. This is more robust and physically meaningful than the previous alignment-based or Binder cumulant methods. If correlation_length is not available, it falls back to the old methods.
+
+- **detect_powerlaw_regime**: Unchanged.
+
+## Comparison Metrics (core/comparison_metrics.py)
+
+- **compare_anchor_to_multilingual**: Now compares anchor vector to meta-vector of multilingual set (not individual vectors). Uses cosine distance as the primary semantic metric, with set-based metrics (Procrustes, CKA, EMD, KL) set to NaN for single vector comparison. This follows community standards for semantic similarity in modern embeddings. 
