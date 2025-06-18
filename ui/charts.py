@@ -12,6 +12,84 @@ import streamlit as st
 
 logger = logging.getLogger(__name__)
 
+LANGUAGE_NAMES = {
+    'en': 'English',
+    'fr': 'French',
+    'es': 'Spanish',
+    'de': 'German',
+    'it': 'Italian',
+    'pt': 'Portuguese',
+    'nl': 'Dutch',
+    'ru': 'Russian',
+    'zh': 'Chinese',
+    'ja': 'Japanese',
+    'af': 'Afrikaans',
+    'am': 'Amharic',
+    'ar': 'Arabic',
+    'az': 'Azerbaijani',
+    'be': 'Belarusian',
+    'bg': 'Bulgarian',
+    'bn': 'Bengali',
+    'bs': 'Bosnian',
+    'ca': 'Catalan',
+    'cs': 'Czech',
+    'cy': 'Welsh',
+    'da': 'Danish',
+    'el': 'Greek',
+    'et': 'Estonian',
+    'fa': 'Persian',
+    'fi': 'Finnish',
+    'ga': 'Irish',
+    'gl': 'Galician',
+    'gu': 'Gujarati',
+    'he': 'Hebrew',
+    'hi': 'Hindi',
+    'hr': 'Croatian',
+    'hu': 'Hungarian',
+    'hy': 'Armenian',
+    'id': 'Indonesian',
+    'is': 'Icelandic',
+    'ka': 'Georgian',
+    'kk': 'Kazakh',
+    'km': 'Khmer',
+    'kn': 'Kannada',
+    'ku': 'Kurdish',
+    'ky': 'Kyrgyz',
+    'la': 'Latin',
+    'lo': 'Lao',
+    'lt': 'Lithuanian',
+    'lv': 'Latvian',
+    'mk': 'Macedonian',
+    'ml': 'Malayalam',
+    'mn': 'Mongolian',
+    'mr': 'Marathi',
+    'ms': 'Malay',
+    'my': 'Burmese',
+    'ne': 'Nepali',
+    'no': 'Norwegian',
+    'pa': 'Punjabi',
+    'pl': 'Polish',
+    'ro': 'Romanian',
+    'sk': 'Slovak',
+    'sl': 'Slovenian',
+    'sq': 'Albanian',
+    'sr': 'Serbian',
+    'su': 'Sundanese',
+    'sv': 'Swedish',
+    'ta': 'Tamil',
+    'te': 'Telugu',
+    'th': 'Thai',
+    'tl': 'Tagalog',
+    'tr': 'Turkish',
+    'uk': 'Ukrainian',
+    'ur': 'Urdu',
+    'vi': 'Vietnamese',
+    'xh': 'Xhosa',
+    'yi': 'Yiddish',
+    'yo': 'Yoruba',
+    'zu': 'Zulu',
+}
+
 
 def safe_plotly_chart(fig, title, key):
     if fig is None or (hasattr(fig, 'data') and len(fig.data) == 0):
@@ -65,8 +143,12 @@ def plot_entropy_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figure
         ))
         
         # Add critical temperature marker if available
+        tc = None
         if 'critical_temperature' in simulation_results:
             tc = simulation_results['critical_temperature']
+        elif hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
+            tc = st.session_state.critical_temperature
+        if tc is not None:
             fig.add_vline(
                 x=tc,
                 line_dash="dash",
@@ -189,7 +271,15 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
             
         # Adjust languages if needed
         if len(languages) != len(tc_vectors):
+            warning_msg = f"[Warning: {len(languages)} language codes, {len(tc_vectors)} vectors. Showing generic labels.]"
             languages = [f'Lang_{i}' for i in range(len(tc_vectors))]
+        else:
+            warning_msg = None
+        
+        # Prepare hover texts with language code and name
+        hover_texts = [
+            f"{code} = {LANGUAGE_NAMES.get(code, 'Unknown')}" for code in languages
+        ]
         
         # Create scatter plot with anchor language highlighting
         fig = go.Figure()
@@ -214,7 +304,8 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
                         color='#636EFA',
                         line=dict(width=1, color='white')
                     ),
-                    hovertemplate='<b>%{text}</b><br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
+                    customdata=[hover_texts[i] for i in non_anchor_indices],
+                    hovertemplate='<b>%{text}</b><br>%{customdata}<br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
                 ))
             
             # Plot anchor language with highlighting
@@ -231,7 +322,8 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
                     line=dict(width=2, color='white'),
                     symbol='star'
                 ),
-                hovertemplate=f'<b>{anchor_language} (Anchor)</b><br>x: %{{x:.3f}}<br>y: %{{y:.3f}}<extra></extra>'
+                customdata=[hover_texts[anchor_idx]],
+                hovertemplate=f'<b>{anchor_language} (Anchor)</b><br>%{{customdata}}<br>x: %{{x:.3f}}<br>y: %{{y:.3f}}<extra></extra>'
             ))
         else:
             # Plot all languages normally (no anchor highlighting)
@@ -247,7 +339,8 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
                     color='#636EFA',
                     line=dict(width=1, color='white')
                 ),
-                hovertemplate='<b>%{text}</b><br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
+                customdata=hover_texts,
+                hovertemplate='<b>%{text}</b><br>%{customdata}<br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
             ))
         
         # Update layout with appropriate title
@@ -257,11 +350,13 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
             title = f"UMAP Projection at T = {used_temp:.3f} (original vectors, no snapshots)"
         else:
             title = f"UMAP Projection at T = {used_temp:.3f} (closest snapshot)"
-            
+        
         # Add anchor language info to title if applicable
         if anchor_language and include_anchor:
             title += f" - {anchor_language} highlighted"
-            
+        if warning_msg:
+            title += f"<br>{warning_msg}"
+        
         fig.update_layout(
             title=title,
             xaxis_title="UMAP 1",
@@ -397,8 +492,12 @@ def plot_correlation_length_vs_temperature(simulation_results: Dict[str, Any]) -
         ))
         
         # Add critical temperature marker if available
+        tc = None
         if 'critical_temperature' in simulation_results:
             tc = simulation_results['critical_temperature']
+        elif hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
+            tc = st.session_state.critical_temperature
+        if tc is not None:
             fig.add_vline(
                 x=tc,
                 line_dash="dash",
@@ -500,8 +599,12 @@ def plot_alignment_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figu
         ))
         
         # Add critical temperature marker if available
+        tc = None
         if 'critical_temperature' in simulation_results:
             tc = simulation_results['critical_temperature']
+        elif hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
+            tc = st.session_state.critical_temperature
+        if tc is not None:
             fig.add_vline(
                 x=tc,
                 line_dash="dash",
@@ -572,8 +675,12 @@ def plot_energy_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figure:
         ))
         
         # Add critical temperature marker if available
+        tc = None
         if 'critical_temperature' in simulation_results:
             tc = simulation_results['critical_temperature']
+        elif hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
+            tc = st.session_state.critical_temperature
+        if tc is not None:
             fig.add_vline(
                 x=tc,
                 line_dash="dash",
