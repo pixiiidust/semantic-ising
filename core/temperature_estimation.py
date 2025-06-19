@@ -95,7 +95,7 @@ def estimate_max_temperature(vectors: np.ndarray) -> float:
     
     The maximum practical temperature is the point where thermal energy
     can easily overwhelm the strongest possible aligning force.
-    Uses factor 1.0 (instead of 2.0-5.0) for faster simulations with reduced range.
+    Uses factor 2.0 for realistic temperature range with normalized energy fluctuations.
     
     Args:
         vectors: Normalized vectors of shape (n_vectors, dim)
@@ -132,7 +132,8 @@ def estimate_max_temperature(vectors: np.ndarray) -> float:
         energy = -np.dot(vectors[i], local_field)
         
         # Maximum possible energy change if vector flips from aligned to anti-aligned
-        energy_fluctuation = 2 * abs(energy)
+        # Normalize by number of vectors to get reasonable scale
+        energy_fluctuation = 2 * abs(energy) / n_vectors
         max_energy_fluctuation = max(max_energy_fluctuation, energy_fluctuation)
     
     # If no significant interactions, return reasonable default
@@ -140,11 +141,12 @@ def estimate_max_temperature(vectors: np.ndarray) -> float:
         return 5.0
     
     # Maximum temperature should be significantly larger than the largest energy fluctuation
-    # Rule of thumb: Tmax ≈ 2-5 × ΔE_max (using 1.0 for faster simulations - reduced range)
-    tmax_estimate = 1.0 * max_energy_fluctuation
+    # Rule of thumb: Tmax ≈ 2-5 × ΔE_max (using 2.0 for realistic temperature range)
+    tmax_estimate = 2.0 * max_energy_fluctuation
     
     # Debug logging
     logger.info(f"Energy fluctuation: {max_energy_fluctuation:.6f}, Tmax estimate: {tmax_estimate:.6f}")
+    print(f"DEBUG: Energy fluctuation: {max_energy_fluctuation:.6f}, Tmax estimate: {tmax_estimate:.6f}")
     
     # Apply reasonable bounds
     tmax_estimate = max(1.0, min(15.0, tmax_estimate))
@@ -153,7 +155,7 @@ def estimate_max_temperature(vectors: np.ndarray) -> float:
 
 
 def estimate_practical_range(vectors: np.ndarray, 
-                           padding: float = 0.1,
+                           padding: float = 0.05,
                            min_span: float = 0.75,
                            min_tmin: float = 0.05,
                            config_max_temperature: float = None) -> Tuple[float, float]:
@@ -165,7 +167,7 @@ def estimate_practical_range(vectors: np.ndarray,
     
     Args:
         vectors: Normalized vectors of shape (n_vectors, dim)
-        padding: Fractional padding to add to range (default: 0.1 = 10%)
+        padding: Fractional padding to add to range (default: 0.05 = 5%)
         min_span: Minimum span required (default: 0.75)
         min_tmin: Minimum temperature floor (default: 0.05)
         config_max_temperature: Maximum temperature from config file (optional)

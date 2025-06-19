@@ -2,7 +2,7 @@
 # v0.2 API locked
 
 # Temperature sweep parameters
-temperature_range: [0.1, 10.0]
+temperature_range: [0.1, 6.0]
 temperature_steps: 50 # Default number of temperature steps
 
 # Default encoder model
