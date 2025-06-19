@@ -112,7 +112,7 @@ streamlit run app.py
 - **Language codes**: ISO 639-1 standard
 - **Translations**: Single words or short phrases
 
-**⚠️ Important Limitation:**
+**Important Limitation:**
 
 - **Current version only supports the same concept across different languages**
 - Each JSON file must contain translations of the **same semantic concept** (e.g., all words meaning "dog")
