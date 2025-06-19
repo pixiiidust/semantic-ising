@@ -26,9 +26,12 @@ data/embeddings/
 ├── dog_LaBSE_cached.npy                                    # Legacy dog embeddings (LaBSE)
 ├── dog_LaBSE_dog_translations_LaBSE_cached.npy             # Legacy dog embeddings
 ├── dog_LaBSE_dog_translations_72_LaBSE_cached.npy          # Legacy extended dog embeddings (72 languages)
+├── dog_25.json_LaBSE_dog_translations_25_LaBSE_cached.npy  # Dog embeddings (25 languages)
 ├── tree_LaBSE_tree_translations_LaBSE_cached.npy           # Legacy tree embeddings
 ├── tree_LaBSE_tree_translations_72_LaBSE_cached.npy        # Legacy extended tree embeddings (72 languages)
 ├── i_love_you_25.json_LaBSE_i_love_you_translations_25_LaBSE_cached.npy # I love you embeddings (25 languages)
+├── i_love_you_75.json_LaBSE_i_love_you_translations_75_LaBSE_cached.npy # I love you embeddings (75 languages)
+├── love_LaBSE_love_translations_75_LaBSE_cached.npy        # Love embeddings (75 languages)
 └── embeddings.md                                           # This documentation file
 ```
 
@@ -75,9 +78,12 @@ print(f"Normalized: {np.allclose(np.linalg.norm(embeddings, axis=1), 1.0)}")  # 
 - `dog_LaBSE_cached.npy` - Legacy dog embeddings (LaBSE)
 - `dog_LaBSE_dog_translations_LaBSE_cached.npy` - Legacy dog embeddings
 - `dog_LaBSE_dog_translations_72_LaBSE_cached.npy` - Legacy extended dog embeddings (72 languages)
+- `dog_25.json_LaBSE_dog_translations_25_LaBSE_cached.npy` - Dog embeddings (25 languages)
 - `tree_LaBSE_tree_translations_LaBSE_cached.npy` - Legacy tree embeddings
 - `tree_LaBSE_tree_translations_72_LaBSE_cached.npy` - Legacy extended tree embeddings (72 languages)
 - `i_love_you_25.json_LaBSE_i_love_you_translations_25_LaBSE_cached.npy` - I love you embeddings (25 languages)
+- `i_love_you_75.json_LaBSE_i_love_you_translations_75_LaBSE_cached.npy` - I love you embeddings (75 languages)
+- `love_LaBSE_love_translations_75_LaBSE_cached.npy` - Love embeddings (75 languages)
 
 ## 💡 Usage Examples
 

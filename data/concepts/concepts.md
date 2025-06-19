@@ -30,6 +30,8 @@ data/concepts/
 ├── tree_translations_75.json       # Extended tree translations (75 languages)
 ├── i_love_you_translations_25.json # I love you translations (25 languages)
 ├── i_love_you_translations_75.json # Extended I love you translations (75 languages)
+├── love_translations_25.json       # Love translations (25 languages)
+├── love_translations_75.json       # Extended love translations (75 languages)
 └── concepts.md                     # This documentation file
 ```
 
@@ -39,6 +41,7 @@ data/concepts/
 - **dog**: Canine animal translations (25 & 75 languages)
 - **tree**: Plant/tree translations (25 & 75 languages)
 - **i_love_you**: Universal expression of love (25 & 75 languages)
+- **love**: Universal concept of love (25 & 75 languages)
 
 ### Planned Concepts
 - **house**: Building/home translations
@@ -254,7 +257,7 @@ print(f"Validation: {message}")
 ## 📊 Statistics
 
 ### Current Coverage
-- **Concepts**: 3 (dog, tree, i_love_you)
+- **Concepts**: 4 (dog, tree, i_love_you, love)
 - **Language sets**: 2 (25 languages, 75 languages)
 - **Total translations**: 450+ unique translations
 - **File sizes**: 1-3 KB each

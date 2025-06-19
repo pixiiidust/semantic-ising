@@ -44,6 +44,9 @@ outputs/
 !data/*.json
 !data/**/*.json
 
+# Cached embeddings (exclude from version control)
+data/embeddings/*.npy
+
 # Temporary files (file hygiene)
 temp_*
 _temp_*

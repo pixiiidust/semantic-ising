@@ -31,14 +31,19 @@ data/
 │   ├── tree_translations_75.json
 │   ├── i_love_you_translations_25.json
 │   ├── i_love_you_translations_75.json
+│   ├── love_translations_25.json
+│   ├── love_translations_75.json
 │   └── concepts.md
 └── embeddings/         # Cached embeddings
     ├── dog_LaBSE_cached.npy
     ├── dog_LaBSE_dog_translations_LaBSE_cached.npy
     ├── dog_LaBSE_dog_translations_72_LaBSE_cached.npy
+    ├── dog_25.json_LaBSE_dog_translations_25_LaBSE_cached.npy
     ├── tree_LaBSE_tree_translations_LaBSE_cached.npy
     ├── tree_LaBSE_tree_translations_72_LaBSE_cached.npy
     ├── i_love_you_25.json_LaBSE_i_love_you_translations_25_LaBSE_cached.npy
+    ├── i_love_you_75.json_LaBSE_i_love_you_translations_75_LaBSE_cached.npy
+    ├── love_LaBSE_love_translations_75_LaBSE_cached.npy
     └── embeddings.md
 ```
 
@@ -52,6 +57,7 @@ data/
 - **dog**: Canine animal translations (25 & 75 languages)
 - **tree**: Plant/tree translations (25 & 75 languages)
 - **i_love_you**: Universal expression of love (25 & 75 languages)
+- **love**: Universal concept of love (25 & 75 languages)
 - **house**: Building/home translations (planned)
 - **car**: Vehicle translations (planned)
 
@@ -80,10 +86,14 @@ data/
 #### Standard Sets (25 languages)
 - `dog_translations_25.json` - Dog translations in common languages
 - `tree_translations_25.json` - Tree translations in common languages
+- `i_love_you_translations_25.json` - I love you translations in common languages
+- `love_translations_25.json` - Love translations in common languages
 
 #### Extended Sets (75 languages)
 - `dog_translations_75.json` - Dog translations in 75 languages
 - `tree_translations_75.json` - Tree translations in 75 languages
+- `i_love_you_translations_75.json` - I love you translations in 75 languages
+- `love_translations_75.json` - Love translations in 75 languages
 
 ## 🧠 Embeddings
 
@@ -114,6 +124,8 @@ data/
 - `tree_LaBSE_tree_translations_LaBSE_cached.npy` - Basic tree embeddings (LaBSE)
 - `tree_LaBSE_tree_translations_72_LaBSE_cached.npy` - Extended tree embeddings (72 languages)
 - `i_love_you_25.json_LaBSE_i_love_you_translations_25_LaBSE_cached.npy` - Extended i_love_you embeddings (25 languages)
+- `i_love_you_75.json_LaBSE_i_love_you_translations_75_LaBSE_cached.npy` - Extended i_love_you embeddings (75 languages)
+- `love_LaBSE_love_translations_75_LaBSE_cached.npy` - Extended love embeddings (75 languages)
 
 ## 📄 File Formats
 
