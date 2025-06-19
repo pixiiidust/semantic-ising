@@ -158,8 +158,9 @@ docker run -p 8501:8501 semantic-ising
 ### Web Interface (Dashboard)
 
 1. **Overview Tab**: Learn about the simulator and scientific background
-2. **Simulation Results**: Run experiments and view real-time metrics
+2. **Simulation Results**: Output from simulations for viewing metrics
 3. **Anchor Comparison**: Analyze anchor language relationships
+4. **Sidebar**: Configuration settings
 
 ### Command Line Interface
 
@@ -178,16 +179,19 @@ python main.py --config my_experiment.yaml
 Two modes to study multilingual semantic structure:
 
 ### **Single-Phase Mode** (`include_anchor=True`)
+
 **Question**: "Does the anchor language share semantic space with other languages?"
 - Anchor participates in Ising dynamics with all languages
 - **Use when**: You want to see how anchor influences collective dynamics
 
 ### **Two-Phase Mode** (`include_anchor=False`)
+
 **Question**: "How does the anchor compare to the emergent multilingual structure?"
 - Anchor excluded from dynamics, compared to result at critical temperature
 - **Use when**: You want to test anchor alignment with emergent structure
 
 #### 📊 **Key Differences**
+
 - **Single-Phase**: Higher Tc, anchor visible in UMAP
 - **Two-Phase**: Lower Tc, anchor highlighted separately in UMAP
 
