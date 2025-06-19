@@ -92,8 +92,8 @@ streamlit run app.py
 ```
 
 **File Naming Convention:**
-- **Basic format**: `{concept}_translations.json`
-- **Extended format**: `{concept}_translations_{N}.json` (where N = number of languages)
+- **Standard format**: `{concept}_translations_25.json` (25 languages)
+- **Extended format**: `{concept}_translations_75.json` (75 languages)
 
 **File Properties:**
 - **Encoding**: UTF-8

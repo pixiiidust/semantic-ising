@@ -24,18 +24,21 @@ The concepts directory serves as the multilingual knowledge base for semantic ex
 
 ```
 data/concepts/
-├── dog_translations.json          # Basic dog translations (10-15 languages)
-├── dog_translations_72.json       # Extended dog translations (72 languages)
-├── tree_translations.json         # Basic tree translations (10-15 languages)
-├── tree_translations_72.json      # Extended tree translations (72 languages)
-└── concepts.md                    # This documentation file
+├── dog_translations_25.json        # Dog translations (25 languages)
+├── dog_translations_75.json        # Extended dog translations (75 languages)
+├── tree_translations_25.json       # Tree translations (25 languages)
+├── tree_translations_75.json       # Extended tree translations (75 languages)
+├── i_love_you_translations_25.json # I love you translations (25 languages)
+├── i_love_you_translations_75.json # Extended I love you translations (75 languages)
+└── concepts.md                     # This documentation file
 ```
 
 ## 🔤 Supported Concepts
 
 ### Current Concepts
-- **dog**: Canine animal translations
-- **tree**: Plant/tree translations
+- **dog**: Canine animal translations (25 & 75 languages)
+- **tree**: Plant/tree translations (25 & 75 languages)
+- **i_love_you**: Universal expression of love (25 & 75 languages)
 
 ### Planned Concepts
 - **house**: Building/home translations
@@ -45,27 +48,17 @@ data/concepts/
 
 ## 🌍 Language Coverage
 
-### Basic Language Sets (10-15 languages)
+### Standard Language Sets (25 languages)
 **European Languages**:
-- English (en)
-- Spanish (es)
-- French (fr)
-- German (de)
-- Italian (it)
-- Portuguese (pt)
-- Russian (ru)
+- English (en), Spanish (es), French (fr), German (de), Italian (it), Portuguese (pt), Dutch (nl), Polish (pl), Russian (ru), Swedish (sv), Danish (da), Finnish (fi), Norwegian (no), Hungarian (hu), Czech (cs), Greek (el), Hebrew (he)
 
 **Asian Languages**:
-- Chinese (zh)
-- Japanese (ja)
-- Korean (ko)
+- Chinese (zh), Japanese (ja), Korean (ko), Thai (th), Vietnamese (vi)
 
 **Other Languages**:
-- Arabic (ar)
-- Hindi (hi)
-- Turkish (tr)
+- Arabic (ar), Hindi (hi), Turkish (tr)
 
-### Extended Language Sets (70+ languages)
+### Extended Language Sets (75 languages)
 **Comprehensive coverage** including:
 - **Indo-European**: English, Spanish, French, German, Italian, Portuguese, Russian, Hindi, Persian, Greek, etc.
 - **Sino-Tibetan**: Chinese, Tibetan, Burmese, etc.
@@ -73,6 +66,7 @@ data/concepts/
 - **Niger-Congo**: Swahili, Yoruba, Zulu, etc.
 - **Austronesian**: Indonesian, Tagalog, Hawaiian, etc.
 - **Uralic**: Finnish, Hungarian, Estonian, etc.
+- **Caucasian**: Georgian, Armenian, Azerbaijani, etc.
 - **And many more**...
 
 ## 📄 File Formats
@@ -94,8 +88,8 @@ data/concepts/
 ```
 
 ### File Naming Convention
-- **Basic format**: `{concept}_translations.json`
-- **Extended format**: `{concept}_translations_{N}.json` (where N = number of languages)
+- **Standard format**: `{concept}_translations_25.json` (25 languages)
+- **Extended format**: `{concept}_translations_75.json` (75 languages)
 
 ### File Properties
 - **Encoding**: UTF-8
@@ -260,10 +254,10 @@ print(f"Validation: {message}")
 ## 📊 Statistics
 
 ### Current Coverage
-- **Concepts**: 2 (dog, tree)
-- **Language sets**: 2 (basic, extended)
-- **Total translations**: 200+ unique translations
-- **File sizes**: 1-2 KB each
+- **Concepts**: 3 (dog, tree, i_love_you)
+- **Language sets**: 2 (25 languages, 75 languages)
+- **Total translations**: 450+ unique translations
+- **File sizes**: 1-3 KB each
 
 ### Language Distribution
 - **European**: 40% of languages

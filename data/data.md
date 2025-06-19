@@ -25,34 +25,39 @@ The data directory serves as the multilingual knowledge base for the simulator, 
 ```
 data/
 ├── concepts/           # Multilingual concept translations
-│   ├── dog_translations.json
-│   ├── dog_translations_72.json
-│   ├── tree_translations.json
-│   ├── tree_translations_72.json
+│   ├── dog_translations_25.json
+│   ├── dog_translations_75.json
+│   ├── tree_translations_25.json
+│   ├── tree_translations_75.json
+│   ├── i_love_you_translations_25.json
+│   ├── i_love_you_translations_75.json
 │   └── concepts.md
 └── embeddings/         # Cached embeddings
     ├── dog_LaBSE_cached.npy
     ├── dog_LaBSE_dog_translations_LaBSE_cached.npy
     ├── dog_LaBSE_dog_translations_72_LaBSE_cached.npy
+    ├── tree_LaBSE_tree_translations_LaBSE_cached.npy
     ├── tree_LaBSE_tree_translations_72_LaBSE_cached.npy
+    ├── i_love_you_25.json_LaBSE_i_love_you_translations_25_LaBSE_cached.npy
     └── embeddings.md
 ```
 
 ## 🔤 Concepts
 
 ### File Naming Convention
-- **Basic format**: `{concept}_translations.json`
-- **Extended format**: `{concept}_translations_{N}.json` (where N = number of languages)
+- **Standard format**: `{concept}_translations_25.json` (25 languages)
+- **Extended format**: `{concept}_translations_75.json` (75 languages)
 
 ### Supported Concepts
-- **dog**: Canine animal translations
-- **tree**: Plant/tree translations
+- **dog**: Canine animal translations (25 & 75 languages)
+- **tree**: Plant/tree translations (25 & 75 languages)
+- **i_love_you**: Universal expression of love (25 & 75 languages)
 - **house**: Building/home translations (planned)
 - **car**: Vehicle translations (planned)
 
 ### Language Coverage
-- **Basic sets**: 10-15 languages (common languages)
-- **Extended sets**: 70+ languages (comprehensive coverage)
+- **Standard sets**: 25 languages (common languages)
+- **Extended sets**: 75 languages (comprehensive coverage)
 
 ### File Structure
 ```json
@@ -72,13 +77,13 @@ data/
 
 ### Available Concept Files
 
-#### Basic Sets (10-15 languages)
-- `dog_translations.json` - Dog translations in common languages
-- `tree_translations.json` - Tree translations in common languages
+#### Standard Sets (25 languages)
+- `dog_translations_25.json` - Dog translations in common languages
+- `tree_translations_25.json` - Tree translations in common languages
 
-#### Extended Sets (70+ languages)
-- `dog_translations_72.json` - Dog translations in 72 languages
-- `tree_translations_72.json` - Tree translations in 72 languages
+#### Extended Sets (75 languages)
+- `dog_translations_75.json` - Dog translations in 75 languages
+- `tree_translations_75.json` - Tree translations in 75 languages
 
 ## 🧠 Embeddings
 
@@ -106,7 +111,9 @@ data/
 - `dog_LaBSE_cached.npy` - Basic dog embeddings (LaBSE)
 - `dog_LaBSE_dog_translations_LaBSE_cached.npy` - Basic dog embeddings
 - `dog_LaBSE_dog_translations_72_LaBSE_cached.npy` - Extended dog embeddings (72 languages)
+- `tree_LaBSE_tree_translations_LaBSE_cached.npy` - Basic tree embeddings (LaBSE)
 - `tree_LaBSE_tree_translations_72_LaBSE_cached.npy` - Extended tree embeddings (72 languages)
+- `i_love_you_25.json_LaBSE_i_love_you_translations_25_LaBSE_cached.npy` - Extended i_love_you embeddings (25 languages)
 
 ## 📄 File Formats
 
@@ -148,7 +155,7 @@ import os
 
 def load_concept_translations(concept_name):
     """Load concept translations from JSON file."""
-    filepath = f"data/concepts/{concept_name}_translations.json"
+    filepath = f"data/concepts/{concept_name}_translations_25.json"
     
     with open(filepath, 'r', encoding='utf-8') as f:
         translations = json.load(f)
@@ -199,7 +206,7 @@ import json
 
 def create_concept_file(concept_name, translations):
     """Create a new concept translation file."""
-    filepath = f"data/concepts/{concept_name}_translations.json"
+    filepath = f"data/concepts/{concept_name}_translations_25.json"
     
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(translations, f, indent=2, ensure_ascii=False)
@@ -242,12 +249,12 @@ create_concept_file("cat", cat_translations)
 
 ## 🌍 Language Support
 
-### Basic Language Set (10-15 languages)
+### Basic Language Set (25 languages)
 - **European**: English, Spanish, French, German, Italian, Portuguese, Russian
 - **Asian**: Chinese, Japanese, Korean
 - **Other**: Arabic, Hindi, Turkish
 
-### Extended Language Set (70+ languages)
+### Extended Language Set (75 languages)
 - **Comprehensive coverage** of major world languages
 - **Regional variations** and dialects
 - **Low-resource languages** for research purposes
@@ -260,10 +267,10 @@ create_concept_file("cat", cat_translations)
 ## 📊 Data Statistics
 
 ### Current Coverage
-- **Concepts**: 2 (dog, tree)
-- **Language sets**: 2 (basic, extended)
+- **Concepts**: 5 (dog, tree, i_love_you, house, car)
+- **Language sets**: 2 (standard, extended)
 - **Total translations**: 200+ unique translations
-- **Cache files**: 4 embedding cache files
+- **Cache files**: 6 embedding cache files
 
 ### File Sizes
 - **Concept files**: 1-2 KB each

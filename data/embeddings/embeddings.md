@@ -23,11 +23,13 @@ The embeddings directory serves as a cache for multilingual embeddings, providin
 
 ```
 data/embeddings/
-├── dog_LaBSE_cached.npy                           # Basic dog embeddings (LaBSE)
-├── dog_LaBSE_dog_translations_LaBSE_cached.npy    # Basic dog embeddings
-├── dog_LaBSE_dog_translations_72_LaBSE_cached.npy # Extended dog embeddings (72 languages)
-├── tree_LaBSE_tree_translations_72_LaBSE_cached.npy # Extended tree embeddings (72 languages)
-└── embeddings.md                                  # This documentation file
+├── dog_LaBSE_cached.npy                                    # Legacy dog embeddings (LaBSE)
+├── dog_LaBSE_dog_translations_LaBSE_cached.npy             # Legacy dog embeddings
+├── dog_LaBSE_dog_translations_72_LaBSE_cached.npy          # Legacy extended dog embeddings (72 languages)
+├── tree_LaBSE_tree_translations_LaBSE_cached.npy           # Legacy tree embeddings
+├── tree_LaBSE_tree_translations_72_LaBSE_cached.npy        # Legacy extended tree embeddings (72 languages)
+├── i_love_you_25.json_LaBSE_i_love_you_translations_25_LaBSE_cached.npy # I love you embeddings (25 languages)
+└── embeddings.md                                           # This documentation file
 ```
 
 ## 🧠 Caching Strategy
@@ -70,10 +72,12 @@ print(f"Normalized: {np.allclose(np.linalg.norm(embeddings, axis=1), 1.0)}")  # 
 - **XLM-R**: XLM-RoBERTa (planned)
 
 ### Available Cache Files
-- `dog_LaBSE_cached.npy` - Basic dog embeddings (LaBSE)
-- `dog_LaBSE_dog_translations_LaBSE_cached.npy` - Basic dog embeddings
-- `dog_LaBSE_dog_translations_72_LaBSE_cached.npy` - Extended dog embeddings (72 languages)
-- `tree_LaBSE_tree_translations_72_LaBSE_cached.npy` - Extended tree embeddings (72 languages)
+- `dog_LaBSE_cached.npy` - Legacy dog embeddings (LaBSE)
+- `dog_LaBSE_dog_translations_LaBSE_cached.npy` - Legacy dog embeddings
+- `dog_LaBSE_dog_translations_72_LaBSE_cached.npy` - Legacy extended dog embeddings (72 languages)
+- `tree_LaBSE_tree_translations_LaBSE_cached.npy` - Legacy tree embeddings
+- `tree_LaBSE_tree_translations_72_LaBSE_cached.npy` - Legacy extended tree embeddings (72 languages)
+- `i_love_you_25.json_LaBSE_i_love_you_translations_25_LaBSE_cached.npy` - I love you embeddings (25 languages)
 
 ## 💡 Usage Examples
 
