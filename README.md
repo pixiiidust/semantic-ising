@@ -18,6 +18,7 @@ A multilingual semantic Ising model simulator that:
 - [Scientific Background](#scientific-background)
 - [Recent Improvements](#recent-improvements)
 - [Contributing](#contributing)
+- [References](#references)
 
 ---
 
