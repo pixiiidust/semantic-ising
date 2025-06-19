@@ -63,7 +63,7 @@ Do words meaning "dog" in 70+ languages share a common latent semantic structure
 <img src="https://github.com/user-attachments/assets/8b658837-fceb-4505-910a-483db73f8d0f" width="100%"/>
 
 ### Configuration Sidebar
-<img src="https://github.com/user-attachments/assets/930b3b43-a08d-4e61-adfd-711528d28f0e" width="30%"/>
+<img src="https://github.com/user-attachments/assets/930b3b43-a08d-4e61-adfd-711528d28f0e" width="40%"/>
 
 
 
