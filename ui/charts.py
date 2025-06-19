@@ -311,6 +311,22 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
             meta_coords = coords[-1]       # Last one is meta-vector
             anchor_coords = None
             
+        # If anchor is included in dynamics, find its position and highlight it
+        if include_anchor and anchor_language and anchor_coords is None:
+            try:
+                # Find the anchor language index in the dynamics languages
+                anchor_idx = languages.index(anchor_language)
+                if anchor_idx < len(language_coords):
+                    # Extract anchor coordinates from language coordinates
+                    anchor_coords = language_coords[anchor_idx]
+                    # Remove anchor from language coordinates to avoid duplication
+                    language_coords = np.vstack([language_coords[:anchor_idx], language_coords[anchor_idx+1:]])
+                    # Remove anchor from languages list
+                    languages = languages[:anchor_idx] + languages[anchor_idx+1:]
+            except (ValueError, IndexError) as e:
+                logger.warning(f"Could not find anchor language {anchor_language} in dynamics: {e}")
+                anchor_coords = None
+        
         # Adjust languages if needed
         if len(languages) != len(tc_vectors):
             warning_msg = f"[Warning: {len(languages)} language codes, {len(tc_vectors)} vectors. Showing generic labels.]"
@@ -363,6 +379,14 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
         
         # Plot anchor vector if present (excluded case)
         if anchor_coords is not None:
+            # Determine if anchor is included or excluded
+            if include_anchor:
+                anchor_status = "included in multilingual set"
+                anchor_title = f"{anchor_language} (Anchor - Included)"
+            else:
+                anchor_status = "excluded from multilingual set"
+                anchor_title = f"{anchor_language} (Anchor - Excluded)"
+                
             fig.add_trace(go.Scatter(
                 x=[anchor_coords[0]],
                 y=[anchor_coords[1]],
@@ -376,8 +400,8 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
                     line=dict(width=2, color='white'),
                     symbol='diamond'  # Different symbol to distinguish from meta-vector
                 ),
-                customdata=[f'{anchor_language} = {LANGUAGE_NAMES.get(anchor_language, "Unknown")} (excluded from multilingual set)'],
-                hovertemplate=f'<b>{anchor_language} (Anchor)</b><br>Excluded from multilingual set<br>x: %{{x:.3f}}<br>y: %{{y:.3f}}<extra></extra>'
+                customdata=[f'{anchor_language} = {LANGUAGE_NAMES.get(anchor_language, "Unknown")} ({anchor_status})'],
+                hovertemplate=f'<b>{anchor_title}</b><br>{anchor_status}<br>x: %{{x:.3f}}<br>y: %{{y:.3f}}<extra></extra>'
             ))
         
         # Update layout with appropriate title
