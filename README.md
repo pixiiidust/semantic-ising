@@ -71,11 +71,15 @@ Do words meaning "dog" in 70+ languages share a common latent semantic structure
 pip install -r requirements.txt
 ```
 
+---
+
 ### 2. Run the Simulator Dashboard
 
 ```bash
 streamlit run app.py
 ```
+
+---
 
 ### 3. Configure Your Experiment
 
@@ -96,21 +100,26 @@ streamlit run app.py
   "ko": "개"
 }
 ```
-  ##### **File Naming Convention:**
+**File Naming Convention:**
+
 - **Standard format**: `{concept}_translations_25.json` (25 languages)
 - **Extended format**: `{concept}_translations_75.json` (75 languages)
 
-  ##### **File Properties:**
+**File Properties:**
+
 - **Encoding**: UTF-8
 - **Format**: Valid JSON
 - **Language codes**: ISO 639-1 standard
 - **Translations**: Single words or short phrases
 
-  ##### **⚠️ Important Limitation:**
+**⚠️ Important Limitation:**
+
 - **Current version only supports the same concept across different languages**
 - Each JSON file must contain translations of the **same semantic concept** (e.g., all words meaning "dog")
 - **Do not mix different concepts** in the same file (e.g., mixing "dog" and "tree" translations)
 - The system assumes all translations in a file are semantically equivalent for proper Ising dynamics analysis
+
+---
 
 ### 4. Usage Steps
 
