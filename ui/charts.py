@@ -270,26 +270,40 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
         meta_vector = meta_result['meta_vector']
         
         # Prepare vectors for UMAP projection
+        anchor_vector = None  # Initialize anchor_vector
+        
         if anchor_language and not include_anchor:
             # Get anchor vector from the original embeddings
             from core.embeddings import generate_embeddings
             try:
-                # Get all embeddings including anchor
-                all_embeddings, all_languages = generate_embeddings(simulation_results.get('concept', 'dog'), 
-                                                                   simulation_results.get('encoder', 'LaBSE'))
+                # Get all embeddings including anchor using the same parameters as simulation
+                concept = simulation_results.get('concept', 'dog')
+                encoder = simulation_results.get('encoder', 'LaBSE')
+                
+                # Try to get the filename from session state if available
+                filename = None
+                if hasattr(st, 'session_state') and hasattr(st.session_state, 'concept_info'):
+                    filename = st.session_state.concept_info.get('filename')
+                
+                logger.info(f"Retrieving anchor vector for {anchor_language} from {concept} with {encoder}, filename: {filename}")
+                
+                all_embeddings, all_languages = generate_embeddings(concept, encoder, filename)
                 anchor_idx = all_languages.index(anchor_language)
                 anchor_vector = all_embeddings[anchor_idx:anchor_idx+1]  # Keep 2D shape
+                
+                logger.info(f"Successfully retrieved anchor vector for {anchor_language} at index {anchor_idx}")
                 
                 # Combine vectors for UMAP: dynamics vectors + meta-vector + anchor vector
                 all_vectors = np.vstack([tc_vectors, meta_vector.reshape(1, -1), anchor_vector])
             except Exception as e:
+                logger.warning(f"Failed to retrieve anchor vector for {anchor_language}: {e}")
                 # Fallback: just use dynamics vectors + meta-vector
                 all_vectors = np.vstack([tc_vectors, meta_vector.reshape(1, -1)])
                 anchor_vector = None
         else:
             # Combine vectors for UMAP projection: language vectors + meta-vector
             all_vectors = np.vstack([tc_vectors, meta_vector.reshape(1, -1)])
-            anchor_vector = None
+            # Note: anchor_vector remains None for included case (will be extracted from dynamics later)
         
         # Perform UMAP projection on all vectors
         try:
@@ -305,12 +319,14 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
             language_coords = coords[:-2]  # All except last two
             meta_coords = coords[-2]       # Second to last is meta-vector
             anchor_coords = coords[-1]     # Last one is anchor vector
+            logger.info(f"UMAP projection: {len(language_coords)} language vectors + meta-vector + anchor vector")
         else:
             # Format: [language_vectors, meta_vector]
             language_coords = coords[:-1]  # All except last
             meta_coords = coords[-1]       # Last one is meta-vector
             anchor_coords = None
-            
+            logger.info(f"UMAP projection: {len(language_coords)} language vectors + meta-vector (no anchor)")
+        
         # If anchor is included in dynamics, find its position and highlight it
         if include_anchor and anchor_language and anchor_coords is None:
             try:
@@ -386,6 +402,8 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
             else:
                 anchor_status = "excluded from multilingual set"
                 anchor_title = f"{anchor_language} (Anchor - Excluded)"
+            
+            logger.info(f"Plotting anchor vector for {anchor_language}: {anchor_status} at coordinates {anchor_coords}")
                 
             fig.add_trace(go.Scatter(
                 x=[anchor_coords[0]],
@@ -403,6 +421,8 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
                 customdata=[f'{anchor_language} = {LANGUAGE_NAMES.get(anchor_language, "Unknown")} ({anchor_status})'],
                 hovertemplate=f'<b>{anchor_title}</b><br>{anchor_status}<br>x: %{{x:.3f}}<br>y: %{{y:.3f}}<extra></extra>'
             ))
+        else:
+            logger.info(f"No anchor coordinates available for {anchor_language} (include_anchor={include_anchor})")
         
         # Update layout with appropriate title
         if interpolation_used:

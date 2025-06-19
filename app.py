@@ -383,7 +383,7 @@ def run_simulation_workflow(concept: str,
         else:
             duration_text = f"~{estimated_seconds:.0f} seconds"
             
-        st.info(f"⏱️ Expected duration: {duration_text} (processing {n_temps} temperatures × {n_sweeps} sweeps each)")
+        st.info(f"⏱️ Expected duration: Approximately {duration_text} (processing {n_temps} steps × {n_sweeps} sweeps each)")
         
         # Create progress callback for real-time updates
         def update_progress(progress_percent, status_message):
@@ -502,6 +502,7 @@ def run_simulation_workflow(concept: str,
         st.session_state.dynamics_languages = dynamics_languages
         st.session_state.anchor_language = anchor_language
         st.session_state.include_anchor = include_anchor
+        st.session_state.concept_info = concept_info  # Store concept_info for UMAP projection
         
         # Clear progress indicators
         progress_bar.empty()
@@ -676,6 +677,7 @@ def create_mock_simulation_results(concept: str,
         st.session_state.dynamics_languages = ['en', 'es', 'fr', 'de', 'it'] if include_anchor else ['es', 'fr', 'de', 'it']
         st.session_state.anchor_language = anchor_language
         st.session_state.include_anchor = include_anchor
+        st.session_state.concept_info = concept_info  # Store concept_info for UMAP projection
         
         st.success(f"✅ Test simulation complete! Mock critical temperature: 1.500")
         
