@@ -250,6 +250,14 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ---
 
+## 📚 References
+
+- [LaBSE: Language-agnostic BERT Sentence Embedding](https://arxiv.org/abs/2007.01852)
+- [Ising Model and Phase Transitions](https://en.wikipedia.org/wiki/Ising_model)
+- [Correlation Length in Critical Phenomena](https://en.wikipedia.org/wiki/Correlation_length)
+
+---
+
 **Ready to discover universal semantic structures?** 🚀
 
 [Report Issues](https://github.com/pixiiidust/semantic-ising/issues) | [Discussions](https://github.com/pixiiidust/semantic-ising/discussions)
