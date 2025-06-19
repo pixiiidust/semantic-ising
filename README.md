@@ -71,7 +71,7 @@ Do words meaning "dog" in 70+ languages share a common latent semantic structure
 pip install -r requirements.txt
 ```
 
----
+##
 
 ### 2. Run the Simulator Dashboard
 
@@ -79,13 +79,13 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
----
+##
 
 ### 3. Configure Your Experiment
 
 #### 📄 Ensure Correct File Formats
 
-  ##### **JSON Structure Example:**
+##### **JSON Structure Example:**
 ```json
 {
   "en": "dog",
@@ -119,7 +119,7 @@ streamlit run app.py
 - **Do not mix different concepts** in the same file (e.g., mixing "dog" and "tree" translations)
 - The system assumes all translations in a file are semantically equivalent for proper Ising dynamics analysis
 
----
+##
 
 ### 4. Usage Steps
 
