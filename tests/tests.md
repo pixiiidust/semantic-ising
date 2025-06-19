@@ -7,7 +7,6 @@ The `tests/` directory contains comprehensive test suites for the Semantic Ising
 - [Overview](#overview)
 - [Test Structure](#test-structure)
 - [Test Categories](#test-categories)
-- [Coverage Statistics](#coverage-statistics)
 - [Running Tests](#running-tests)
 - [Test Data](#test-data)
 
@@ -15,7 +14,7 @@ The `tests/` directory contains comprehensive test suites for the Semantic Ising
 
 The test suite provides comprehensive validation for the Semantic Ising Simulator, featuring:
 
-- **325 total tests** across all modules
+- **242 total tests** across all modules (see [directory_structure.lua](../directory_structure.lua) for latest count)
 - **Test-Driven Development** workflow
 - **Comprehensive coverage** of core functionality
 - **Integration testing** for end-to-end workflows
@@ -40,12 +39,14 @@ tests/
 
 ## 🧪 Test Categories
 
+For the complete and up-to-date test coverage information, including test counts by module and coverage statistics, please refer to [directory_structure.lua](../directory_structure.lua).
+
 ### 🔧 Core Module Tests
 
 #### Configuration & CLI
-- **`test_config_validation.py`** (10 tests) - Configuration validation
-- **`test_config_types.py`** (4 tests) - Type conversion and validation
-- **`test_cli.py`** (3 tests) - Command-line interface
+- **`test_config_validation.py`** - Configuration validation
+- **`test_config_types.py`** - Type conversion and validation
+- **`test_cli.py`** - Command-line interface
 
 #### Core Simulation
 - **`test_simulation.py`** (21 tests) - Core simulation engine
@@ -86,30 +87,6 @@ tests/
 
 #### End-to-End Testing
 - **`test_integration.py`** (19 tests) - Complete pipeline testing
-
-## 📊 Coverage Statistics
-
-### Test Counts by Module
-- **Core Simulation**: 67 tests
-- **Analysis & Metrics**: 85 tests
-- **Configuration & CLI**: 17 tests
-- **Export & I/O**: 30 tests
-- **UI Components**: 45 tests
-- **Validation**: 45 tests
-- **Integration**: 19 tests
-
-### Coverage Areas
-- **Unit Tests**: Individual function testing
-- **Integration Tests**: Module interaction testing
-- **Edge Case Tests**: Error condition handling
-- **Performance Tests**: Scalability and memory usage
-- **Validation Tests**: Mathematical property verification
-
-### Test Quality Metrics
-- **Pass Rate**: 100% (325/325 tests passing)
-- **Coverage**: Comprehensive across all modules
-- **Error Handling**: All error conditions tested
-- **Edge Cases**: Boundary conditions validated
 
 ## 🚀 Running Tests
 

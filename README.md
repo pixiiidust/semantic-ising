@@ -138,19 +138,14 @@ streamlit run app.py
 
 ## 📦 Installation
 
-### Prerequisites
+For detailed setup instructions, system requirements, implementation details, and technical documentation, please see our [Setup Guide](SETUP.md). For the canonical project structure and module dependencies, refer to [directory_structure.lua](directory_structure.lua).
 
-- Python 3.11 or 3.10 (recommended for PyTorch compatibility)
-- 4GB+ RAM for large language sets
-
-### Install
+### Quick Install
 
 ```bash
-# Clone the repository
+# Clone and install
 git clone https://github.com/pixiiidust/semantic-ising.git
 cd semantic-ising
-
-# Install dependencies
 pip install -r requirements.txt
 
 # Run the app
@@ -164,6 +159,8 @@ streamlit run app.py
 docker build -t semantic-ising .
 docker run -p 8501:8501 semantic-ising
 ```
+
+See [SETUP.md](SETUP.md) for complete installation options, dependencies, and system requirements.
 
 ---
 
@@ -252,7 +249,17 @@ The simulator applies statistical physics concepts to semantic analysis:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on how to contribute to this project.
+We welcome contributions! Before contributing:
+
+1. Review our [Setup Guide](SETUP.md) for detailed implementation and technical documentation
+2. Check [directory_structure.lua](directory_structure.lua) for the canonical project structure, which defines:
+   - Complete module hierarchy
+   - File dependencies
+   - Test coverage requirements
+   - Component relationships
+3. Ensure your changes align with our project architecture and coding standards
+
+See our [Contributing Guidelines](CONTRIBUTING.md) for detailed instructions.
 
 ---
 

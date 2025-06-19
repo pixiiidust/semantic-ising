@@ -2,11 +2,34 @@
 
 We welcome contributions! This document provides guidelines for contributing to the Semantic Ising Simulator project.
 
-## 🤝 Contributing
+## 📋 Table of Contents
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+- [Before Contributing](#-before-contributing)
+- [Development Setup](#-development-setup)
+- [Key Areas for Contribution](#-key-areas-for-contribution)
+- [Future Work](#-future-work)
+  - [Enhanced Multilingual Support](#-enhanced-multilingual-support)
+  - [Multi-Concept Comparisons](#-multi-concept-comparisons)
+  - [Research Applications](#-research-applications)
+  - [Technical Enhancements](#-technical-enhancements)
+- [License](#-license)
+- [Acknowledgments](#-acknowledgments)
+- [References](#-references)
 
-### Development Setup
+## 🔍 Before Contributing
+
+1. Review the project structure in [directory_structure.lua](directory_structure.lua), which serves as our canonical source of truth for:
+   - Complete module hierarchy
+   - File dependencies
+   - Test coverage requirements
+   - Component relationships
+   - Documentation locations
+
+2. Ensure your changes align with the existing architecture documented in directory_structure.lua
+3. Check that any new files or dependencies are properly declared in directory_structure.lua
+4. Verify test coverage requirements are met according to the structure
+
+## 💻 Development Setup
 
 ```bash
 # Install development dependencies
@@ -19,7 +42,7 @@ pytest tests/
 pytest --cov=core --cov=ui tests/
 ```
 
-### Key Areas for Contribution
+## 🎯 Key Areas for Contribution
 
 - **New Concepts**: Add multilingual concept files in `data/concepts/`
 - **Visualizations**: Enhance chart functions in `ui/charts.py`

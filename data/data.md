@@ -22,30 +22,17 @@ The data directory serves as the multilingual knowledge base for the simulator, 
 
 ## 📁 Directory Structure
 
-```
-data/
-├── concepts/           # Multilingual concept translations
-│   ├── dog_translations_25.json
-│   ├── dog_translations_75.json
-│   ├── tree_translations_25.json
-│   ├── tree_translations_75.json
-│   ├── i_love_you_translations_25.json
-│   ├── i_love_you_translations_75.json
-│   ├── love_translations_25.json
-│   ├── love_translations_75.json
-│   └── concepts.md
-└── embeddings/         # Cached embeddings
-    ├── dog_LaBSE_cached.npy
-    ├── dog_LaBSE_dog_translations_LaBSE_cached.npy
-    ├── dog_LaBSE_dog_translations_72_LaBSE_cached.npy
-    ├── dog_25.json_LaBSE_dog_translations_25_LaBSE_cached.npy
-    ├── tree_LaBSE_tree_translations_LaBSE_cached.npy
-    ├── tree_LaBSE_tree_translations_72_LaBSE_cached.npy
-    ├── i_love_you_25.json_LaBSE_i_love_you_translations_25_LaBSE_cached.npy
-    ├── i_love_you_75.json_LaBSE_i_love_you_translations_75_LaBSE_cached.npy
-    ├── love_LaBSE_love_translations_75_LaBSE_cached.npy
-    └── embeddings.md
-```
+For the complete and up-to-date project structure, including the data directory organization, please refer to [directory_structure.lua](../directory_structure.lua). Below are the key data components:
+
+### Concepts Directory (`concepts/`)
+- Translation files in JSON format
+- Standard (25 languages) and extended (75 languages) sets
+- Documentation in concepts.md
+
+### Embeddings Directory (`embeddings/`)
+- Cached embedding files (.npy format)
+- Organized by concept and encoder
+- Documentation in embeddings.md
 
 ## 🔤 Concepts
 

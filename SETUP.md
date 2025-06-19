@@ -1,0 +1,228 @@
+# 🛠️ Detailed Setup Guide
+
+## 📋 Table of Contents
+- [Overview](#overview)
+- [System Requirements](#system-requirements)
+- [Quick Start](#quick-start)
+- [Project Architecture](#project-architecture)
+- [Implementation Details](#implementation-details)
+- [Data Management](#data-management)
+- [Running Experiments](#running-experiments)
+- [Output & Analysis](#output--analysis)
+
+## 📖 Overview
+The Semantic Ising Simulator explores how semantically identical words across languages converge in their embedding space. It uses statistical physics concepts (Ising model dynamics) to detect phase transitions in multilingual semantic alignments.
+
+### Key Features
+- Multilingual semantic analysis (25-75 languages)
+- Phase transition detection in semantic space
+- Real-time visualization and monitoring
+- Comprehensive metric analysis
+- Anchor language comparisons
+
+## 💻 System Requirements
+
+### Hardware
+- CPU: Multi-core recommended for parallel simulations
+- RAM: 4GB+ for standard simulations (8GB+ for 70+ languages)
+- GPU: CUDA-capable (optional, for faster embeddings)
+- Storage: 500MB+ for embeddings cache
+
+### Software
+- Python 3.10 or 3.11 (recommended)
+- Git for version control
+- CUDA Toolkit 11.8+ (if using GPU)
+
+## ⚡ Quick Start
+
+### Basic Installation
+```bash
+# Clone and setup
+git clone https://github.com/pixiiidust/semantic-ising.git
+cd semantic-ising
+python -m venv venv
+venv\Scripts\activate     # Windows
+source venv/bin/activate  # Linux/Mac
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Optional: GPU support
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Run the simulator
+streamlit run app.py
+```
+
+### Reproducing Results
+1. Clone the repository
+2. Install dependencies from `requirements.txt`
+3. Download concept files from `data/concepts/`
+4. Run simulations with default parameters
+5. Compare outputs with reference results in `docs/reference_results/`
+
+## 🏗️ Project Architecture
+
+The complete and up-to-date project structure is maintained in [directory_structure.lua](directory_structure.lua), which serves as the canonical source of truth for the project's architecture. Please refer to it for:
+
+- Complete module hierarchy and dependencies
+- File relationships and data flow
+- Test coverage information
+- Component documentation
+
+### Core Components
+1. **Simulation Engine** (`core/`):
+   - Implements Metropolis-Hastings and Glauber dynamics
+   - Manages temperature sweeps and convergence
+   - Detects phase transitions
+   - Computes meta vectors and correlations
+
+2. **Analysis Pipeline** (`core/`):
+   - Generates and caches LaBSE embeddings
+   - Analyzes correlations and clustering
+   - Computes comparison metrics
+   - Performs post-simulation analysis
+
+3. **User Interface** (`ui/`):
+   - Real-time visualization of simulations
+   - Interactive parameter configuration
+   - Progress monitoring and logging
+   - Results analysis and export
+
+## 🔧 Implementation Details
+
+### Core Simulation
+1. **Ising Dynamics**:
+   ```python
+   # core/simulation.py
+   def update_vectors_metropolis(vectors, temperature):
+       """Metropolis-Hastings update for semantic vectors.
+       
+       Args:
+           vectors (np.ndarray): Shape (n_langs, embedding_dim)
+           temperature (float): Current temperature
+           
+       Returns:
+           np.ndarray: Updated vectors
+       """
+   ```
+
+2. **Phase Detection**:
+   ```python
+   # core/phase_detection.py
+   def find_critical_temperature(correlation_lengths, temperatures):
+       """Detect Tc using log(ξ) derivative method.
+       
+       Returns:
+           float: Critical temperature
+       """
+   ```
+
+### Embedding Pipeline
+1. **LaBSE Model**:
+   - Architecture: BERT-based
+   - Input: UTF-8 text
+   - Output: 768-dimensional vectors
+   - Language Support: 109 languages
+   - Paper: [LaBSE: Language-agnostic BERT Sentence Embedding](https://arxiv.org/abs/2007.01852)
+
+2. **Caching System**:
+   ```python
+   # core/embeddings.py
+   def cache_embeddings(vectors, languages, concept):
+       """Cache embeddings with validation."""
+   ```
+
+## 📊 Data Management
+
+### Input Data
+1. **Concept Files** (`data/concepts/`):
+   ```json
+   {
+     "en": "dog",
+     "es": "perro",
+     "fr": "chien"
+   }
+   ```
+   - Format: UTF-8 JSON
+   - Naming: `{concept}_translations_{25|75}.json`
+   - Validation: Language code check (ISO 639-1)
+
+2. **Embeddings** (`data/embeddings/`):
+   - Format: NumPy arrays (.npy)
+   - Dimensions: (n_languages, 768)
+   - Naming: `{concept}_{timestamp}.npy`
+   - Auto-generated and cached
+
+### Dependencies
+Core requirements (see `requirements.txt`):
+```
+sentence-transformers>=2.2.0  # LaBSE embeddings
+torch>=2.0.0                 # Neural network operations
+umap-learn>=0.5.3           # Dimensionality reduction
+plotly>=5.13.0              # Interactive visualization
+streamlit>=1.22.0           # Web interface
+numpy>=1.23.5               # Numerical computation
+scipy>=1.10.0               # Scientific computing
+pyyaml>=6.0                 # Configuration
+```
+
+## 🔬 Running Experiments
+
+### Configuration
+1. **Basic Setup**:
+   - Select concept and language set
+   - Configure anchor language (optional)
+   - Set/auto-estimate temperature range
+
+2. **Advanced Parameters**:
+   - Temperature: 0.1 to 5.0 (auto-estimated)
+   - Update Rules: Metropolis-Hastings or Glauber
+   - Convergence Threshold: ΔS < 1e-6
+   - Early Stop: 1000 steps without convergence
+
+### Monitoring
+- Real-time progress tracking
+- Live metric updates
+- Interactive visualizations
+- Error logging and recovery
+
+## 📈 Output & Analysis
+
+### Metrics & Measurements
+1. **Correlation Length (ξ)**:
+   - Definition: ξ = √(-1/log(C(r)))
+   - Usage: Critical temperature detection
+   - Implementation: `core/dynamics.py:compute_correlation_length()`
+
+2. **Convergence**:
+   - Primary: Entropy stabilization (ΔS)
+   - Secondary: Energy fluctuations
+   - Threshold: ΔS < 1e-6 over 100 steps
+   - Code: `core/simulation.py:check_convergence()`
+
+3. **Similarity Metrics**:
+   - Basic: Cosine similarity/distance
+   - Advanced: Procrustes, CKA, EMD, KL
+   - Implementation: `core/comparison_metrics.py`
+
+### Output Files
+1. **Simulation Data**:
+   - Temperature sweep results (.csv)
+   - Vector snapshots at Tc (.npy)
+   - Convergence metrics (.json)
+   - UMAP projections (.html)
+
+2. **Analysis Results**:
+   - Phase transition plots
+   - Correlation analysis
+   - Anchor comparisons
+   - Performance metrics
+
+### Visualization
+- Interactive UMAP projections
+- Temperature sweep plots
+- Correlation decay curves
+- Convergence diagnostics
+
+For detailed implementation references, see inline documentation in respective modules. 
