@@ -115,7 +115,7 @@ streamlit run app.py
 
 ### 4. Usage Steps
 
-1. **Select Concept**: Choose a concept (e.g., "dog", "tree", "house")
+1. **Select Concept**: Choose a concept (e.g., "dog", "tree", "love") or upload your own concepts
 2. **Set Temperature Range**: Use auto-estimate (recommended) or set manually (0.1-5.0)
 3. **Configure Anchor**: Choose anchor language and include/exclude from dynamics
 4. **Run Simulation**: Click "Run Simulation" and watch the magic happen!
