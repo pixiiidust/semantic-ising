@@ -29,9 +29,9 @@ Do words meaning "dog" in 70+ languages share a common latent semantic structure
 * This speculative approach is inspired by the **Platonic representation hypothesis** 
 
 **Key Research Questions:**
-- Do semantically identical words across languages converge in embedding space?
-- What is the critical temperature where semantic phase transitions occur?
-- How do anchor languages relate to emergent multilingual semantic structures?
+1. Do semantically identical words across languages converge towards a universal embedding space?
+2. What is the critical temperature where semantic phase transitions occur?
+3. How do anchor languages relate to emergent multilingual semantic structures?
 
 ---
 
