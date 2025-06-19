@@ -37,18 +37,18 @@ Do words meaning "dog" in 70+ languages share a common latent semantic structure
 ## ✨ Features
 
 ### 🔬 Core Simulation
-- **🌍 Multilingual Support**: 70+ languages with LaBSE embeddings
-- **🔥 Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
-- **🎯 Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
-- **🌡️ Smart Temperature Estimation**: Auto-estimation with configurable limits and conservative energy scaling
+- **Multilingual Support**: 70+ languages with LaBSE embeddings
+- **Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
+- **Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
+- **Smart Temperature Estimation**: Auto-estimation with configurable limits and conservative energy scaling
 
 ### 📊 Analysis & Visualization
-- **🔗 Anchor Language Analysis**: Single-phase vs two-phase experimental designs
-- **📊 Interactive Visualizations**: UMAP projections, entropy curves, correlation analysis
-- **📈 Advanced Metrics**: Cosine distance and similarity for anchor comparison
+- **Anchor Language Analysis**: Single-phase vs two-phase experimental designs
+- **Interactive Visualizations**: UMAP projections, entropy curves, correlation analysis
+- **Advanced Metrics**: Cosine distance and similarity for anchor comparison
 
 ### 🖥️ User Interface
-- **🖥️ Streamlit UI**: User-friendly interface with real-time simulation monitoring and progress tracking
+- **Streamlit UI**: User-friendly interface with real-time simulation monitoring and progress tracking
 
 ---
 
