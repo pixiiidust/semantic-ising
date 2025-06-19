@@ -21,6 +21,7 @@ from typing import Dict, List, Any, Tuple
 import logging
 import os
 import sys
+import time
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -365,18 +366,41 @@ def run_simulation_workflow(concept: str,
         status_text.text("⚙️ Running temperature sweep...")
         progress_bar.progress(0.4)
         
+        # Record start time for elapsed time tracking
+        simulation_start_time = time.time()
+        
         # Show expected duration
         n_temps = len(T_range)
         n_sweeps = 10  # n_sweeps_per_temperature
-        st.info(f"⏱️ Expected duration: ~{n_temps * n_sweeps * 2} seconds (processing {n_temps} temperatures × {n_sweeps} sweeps each)")
+        
+        # Accurate timing estimate based on actual performance: 10.9 minutes for 200 temperatures
+        # Average: ~3.3 seconds per temperature
+        estimated_seconds = n_temps * 3.3
+        estimated_minutes = estimated_seconds / 60
+        
+        if estimated_minutes >= 1:
+            duration_text = f"~{estimated_minutes:.1f} minutes"
+        else:
+            duration_text = f"~{estimated_seconds:.0f} seconds"
+            
+        st.info(f"⏱️ Expected duration: {duration_text} (processing {n_temps} temperatures × {n_sweeps} sweeps each)")
         
         # Create progress callback for real-time updates
         def update_progress(progress_percent, status_message):
+            # Calculate elapsed time
+            elapsed_seconds = time.time() - simulation_start_time
+            elapsed_minutes = elapsed_seconds / 60
+            
+            if elapsed_minutes >= 1:
+                elapsed_text = f"{elapsed_minutes:.1f}m {elapsed_seconds % 60:.0f}s"
+            else:
+                elapsed_text = f"{elapsed_seconds:.0f}s"
+            
             # Scale progress from 0-100 to 0.4-0.6 (temperature sweep range)
             # Convert percentage to 0.0-1.0 range
             scaled_progress = 0.4 + (progress_percent / 100.0) * 0.2  # 0.4 to 0.6
             progress_bar.progress(scaled_progress)
-            status_text.text(status_message)
+            status_text.text(f"{status_message} (Elapsed: {elapsed_text})")
         
         # Run simulation with config parameters and progress callback
         simulation_results = run_temperature_sweep(
@@ -389,7 +413,15 @@ def run_simulation_workflow(concept: str,
         )
         
         # Update status to show simulation completed
-        status_text.text("✅ Temperature sweep completed!")
+        elapsed_seconds = time.time() - simulation_start_time
+        elapsed_minutes = elapsed_seconds / 60
+        
+        if elapsed_minutes >= 1:
+            elapsed_text = f"{elapsed_minutes:.1f}m {elapsed_seconds % 60:.0f}s"
+        else:
+            elapsed_text = f"{elapsed_seconds:.0f}s"
+            
+        status_text.text(f"✅ Temperature sweep completed! (Elapsed: {elapsed_text})")
         progress_bar.progress(0.6)
         
         # Add dynamics vectors to simulation results for post-analysis
@@ -453,6 +485,15 @@ def run_simulation_workflow(concept: str,
         status_text.text("✅ Simulation complete!")
         progress_bar.progress(1.0)
         
+        # Calculate total elapsed time
+        total_elapsed_seconds = time.time() - simulation_start_time
+        total_elapsed_minutes = total_elapsed_seconds / 60
+        
+        if total_elapsed_minutes >= 1:
+            total_elapsed_text = f"{total_elapsed_minutes:.1f}m {total_elapsed_seconds % 60:.0f}s"
+        else:
+            total_elapsed_text = f"{total_elapsed_seconds:.0f}s"
+        
         # Store results in session state
         st.session_state.simulation_results = simulation_results
         st.session_state.analysis_results = analysis_results
@@ -466,7 +507,7 @@ def run_simulation_workflow(concept: str,
         progress_bar.empty()
         status_text.empty()
         
-        st.success(f"✅ Simulation complete! Critical temperature: {tc:.3f}")
+        st.success(f"✅ Simulation complete! (Elapsed: {total_elapsed_text})\nCritical temperature: {tc:.3f}")
         
     except Exception as e:
         # Clear progress indicators on error

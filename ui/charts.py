@@ -141,7 +141,7 @@ def plot_entropy_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figure
             y=valid_entropy,
             mode='lines+markers',
             name='Entropy',
-            line=dict(color='#1f77b4', width=2),
+            line=dict(color='#1f77b4', width=1.5),
             marker=dict(size=6)
         ))
         
@@ -554,7 +554,7 @@ def plot_correlation_length_vs_temperature(simulation_results: Dict[str, Any]) -
             y=valid_corr,
             mode='lines+markers',
             name='Correlation Length',
-            line=dict(color='#d62728', width=2),
+            line=dict(color='yellow', width=1.5),
             marker=dict(size=6)
         ))
         
@@ -655,7 +655,7 @@ def plot_alignment_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figu
             y=valid_align,
             mode='lines+markers',
             name='Alignment',
-            line=dict(color='blue', width=2),
+            line=dict(color='blue', width=1.5),
             marker=dict(
                 size=8,
                 color=colors,
@@ -737,7 +737,7 @@ def plot_energy_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figure:
             y=valid_energy,
             mode='lines+markers',
             name='Energy',
-            line=dict(color='#2ca02c', width=2),
+            line=dict(color='#2ca02c', width=1.5),
             marker=dict(size=6)
         ))
         
@@ -944,7 +944,7 @@ def plot_convergence_history(convergence_data: List[Dict[str, Any]], selected_te
                     y=entropies,
                     mode='lines+markers',
                     name=f'Entropy Evolution at T={data["temperature"]:.3f}',
-                    line=dict(color='blue', width=2),
+                    line=dict(color='blue', width=1.5),
                     marker=dict(size=6)
                 ))
                 
@@ -1112,7 +1112,7 @@ def plot_entropy_vs_correlation_length(simulation_results: Dict[str, Any]) -> go
             y=valid_entropy,
             mode='lines+markers',
             name='Entropy vs Correlation Length',
-            line=dict(color='#9467bd', width=2),
+            line=dict(color='#9467bd', width=1.5),
             marker=dict(size=6)
         ))
         
