@@ -211,14 +211,14 @@ Two modes to study multilingual semantic structure:
 
 The simulator applies statistical physics concepts to semantic analysis:
 
-- **Vectors as Spins**: Word embeddings represent "spins" in semantic space
+- **Vectors as Spins**: Multilingual concept embeddings conceived as "spin" alignments in semantic space
 - **Temperature Control**: Higher T = more randomness, Lower T = more alignment
 - **Phase Transitions**: Critical temperature (Tc) marks emergence of universal structure
 - **Correlation Length**: Characteristic scale of semantic correlations
 
 ### Key Metrics
 
-- **Alignment**: Average cosine similarity between vectors (0-1 scale)
+- **Alignment**: Average cosine similarity between concept vectors (0-1 scale)
 - **Entropy**: Shannon entropy of vector distribution
 - **Correlation Length**: Characteristic length scale of correlations
 - **Cosine Distance**: Primary semantic distance metric for anchor comparison (0-1, lower is better)
@@ -226,7 +226,7 @@ The simulator applies statistical physics concepts to semantic analysis:
 
 ### Phase Transition Detection
 
-- The simulator now detects the critical temperature (Tc) using the log(ξ) derivative method: Tc is identified as the temperature where the correlation length (ξ) collapses (the "knee" in the plot). This is more robust and physically meaningful than previous alignment-based or Binder cumulant methods.
+- The simulator now detects the critical temperature (Tc) using the log(ξ) derivative method: Tc is identified as the temperature where the correlation length (ξ) collapses (the "knee" in the plot). This is more robust and physically meaningful than previous Binder cumulant methods.
 
 - All UI and analysis now annotate Tc at the knee, matching physical expectations.
 
