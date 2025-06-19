@@ -81,7 +81,7 @@ streamlit run app.py
 
 #### 📄 Ensure Correct File Formats
 
-  **JSON Structure Example:**
+  ##### **JSON Structure Example:**
 ```json
 {
   "en": "dog",
@@ -96,18 +96,17 @@ streamlit run app.py
   "ko": "개"
 }
 ```
-
-  **File Naming Convention:**
+  ##### **File Naming Convention:**
 - **Standard format**: `{concept}_translations_25.json` (25 languages)
 - **Extended format**: `{concept}_translations_75.json` (75 languages)
 
-  **File Properties:**
+  ##### **File Properties:**
 - **Encoding**: UTF-8
 - **Format**: Valid JSON
 - **Language codes**: ISO 639-1 standard
 - **Translations**: Single words or short phrases
 
-  **⚠️ Important Limitation:**
+  ##### **⚠️ Important Limitation:**
 - **Current version only supports the same concept across different languages**
 - Each JSON file must contain translations of the **same semantic concept** (e.g., all words meaning "dog")
 - **Do not mix different concepts** in the same file (e.g., mixing "dog" and "tree" translations)
