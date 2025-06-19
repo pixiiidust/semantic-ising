@@ -37,9 +37,9 @@ def render_anchor_comparison_tab(comparison_metrics: Dict[str, float], experimen
         # Display main metrics concisely
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Cosine Distance", f"{comparison_metrics['cosine_distance']:.4f}", help="Primary semantic distance metric (0-1, lower is better)")
+            st.metric("Cosine Distance", f"{comparison_metrics['cosine_distance']:.4f}", help="Distance between anchor language vector and multilingual meta-vector at Tc (0-1, lower is better)")
         with col2:
-            st.metric("Cosine Similarity", f"{comparison_metrics['cosine_similarity']:.4f}", help="Directional similarity (0-1, higher is better)")
+            st.metric("Cosine Similarity", f"{comparison_metrics['cosine_similarity']:.4f}", help="Similarity between anchor language vector and multilingual meta-vector at Tc (0-1, higher is better)")
         
         # Experiment configuration in expander
         with st.expander("⚙️ Experiment Configuration", expanded=False):
@@ -64,7 +64,12 @@ def render_anchor_comparison_tab(comparison_metrics: Dict[str, float], experimen
                 st.warning("Moderate semantic similarity")
             else:
                 st.error("Weak semantic similarity")
-            st.write("Cosine similarity and distance quantify how closely the anchor language aligns with the emergent multilingual structure at Tc.")
+            
+            st.write("**What's being compared:**")
+            st.write("""
+            * Cosine similarity and distance quantify how closely the anchor language aligns with the emergent multilingual structure at Tc."
+            * The emergent multilingual structure is estimated by a **meta-vector** (centroid) computed as the average of all language vectors at the critical temperature.
+            * Computation: **Meta-vector** = mean(all language vectors at Tc), then normalized to unit length.""")
         
         # UMAP projection if available
         if hasattr(st.session_state, 'simulation_results') and hasattr(st.session_state, 'analysis_results'):
@@ -103,14 +108,14 @@ def display_comparison_metrics(comparison_metrics: Dict[str, float]) -> None:
         st.metric(
             "Cosine Distance",
             f"{comparison_metrics.get('cosine_distance', 0.0):.4f}",
-            help="Primary semantic distance metric. Lower values indicate more similar meaning."
+            help="Distance between anchor language vector and multilingual meta-vector at Tc. Lower values indicate more similar meaning."
         )
         
         # Supporting metric: Cosine Similarity
         st.metric(
             "Cosine Similarity",
             f"{comparison_metrics.get('cosine_similarity', 0.0):.4f}",
-            help="Directional similarity. Higher values indicate more similar vector directions."
+            help="Similarity between anchor language vector and multilingual meta-vector at Tc. Higher values indicate more similar vector directions."
         )
         
     except Exception as e:
@@ -203,14 +208,14 @@ def display_metric_breakdown(comparison_metrics: Dict[str, float]) -> None:
         # Define metric descriptions and thresholds
         metric_info = {
             'cosine_distance': {
-                'description': 'Primary semantic distance metric measuring vector orientation difference',
+                'description': 'Distance between anchor language vector and multilingual meta-vector (centroid) at critical temperature',
                 'excellent': '< 0.1',
                 'good': '0.1 - 0.3',
                 'moderate': '0.3 - 0.6',
                 'poor': '> 0.6'
             },
             'cosine_similarity': {
-                'description': 'Cosine similarity measuring vector direction alignment',
+                'description': 'Similarity between anchor language vector and multilingual meta-vector (centroid) at critical temperature',
                 'excellent': '> 0.9',
                 'good': '0.7 - 0.9',
                 'moderate': '0.5 - 0.7',

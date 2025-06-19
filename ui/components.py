@@ -291,8 +291,8 @@ def render_anchor_comparison_summary(comparison_metrics: Dict[str, float]) -> No
         
         # Define metric descriptions
         metric_descriptions = {
-            'cosine_distance': 'Primary semantic distance metric (0-1, lower is better)',
-            'cosine_similarity': 'Directional similarity (0-1, higher is better)'
+            'cosine_distance': 'Distance between anchor language vector and multilingual meta-vector at Tc (0-1, lower is better)',
+            'cosine_similarity': 'Similarity between anchor language vector and multilingual meta-vector at Tc (0-1, higher is better)'
         }
         
         # Create columns for metrics

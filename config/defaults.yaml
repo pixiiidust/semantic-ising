@@ -21,8 +21,8 @@ store_all_temperatures: true
 
 # UMAP parameters
 umap_params:
-  n_neighbors: 30
-  min_dist: 0.1
+  n_neighbors: 25
+  min_dist: 0.2
   n_components: 2
   random_state: 42
 

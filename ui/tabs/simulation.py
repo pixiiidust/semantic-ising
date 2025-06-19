@@ -292,14 +292,14 @@ def display_anchor_interpretation(comparison_metrics: Dict[str, float]) -> None:
             st.metric(
                 "Cosine Distance",
                 f"{cosine_distance:.3f}",
-                help="Primary semantic distance metric (0-1, lower is better)"
+                help="Distance between anchor language vector and multilingual meta-vector at Tc (0-1, lower is better)"
             )
         
         with col2:
             st.metric(
                 "Cosine Similarity",
                 f"{cosine_similarity:.3f}",
-                help="Directional similarity (0-1, higher is better)"
+                help="Similarity between anchor language vector and multilingual meta-vector at Tc (0-1, higher is better)"
             )
         
     except Exception as e:
