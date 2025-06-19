@@ -2,7 +2,7 @@
 
 A multilingual semantic Ising model simulator that: 
 1. Explores how semantically identical words across languages potentially converge in their embedding space (under Ising dynamics). 
-2. Visualizes multilingual alignments to reveal latent structure approaching critical temperature.
+2. Visualizes multilingual alignments to reveal latent structure as the system approaches a critical threshold.
 
 ---
 
@@ -24,7 +24,8 @@ A multilingual semantic Ising model simulator that:
 ## 🎯 Overview
 
 Do words meaning "dog" in 70+ languages share a common latent semantic structure? 
-* Using Ising model dynamics, we simulate semantic phase transitions and detect critical temperatures where universal semantic patterns emerge.
+* Using Ising model dynamics, we simulate semantic phase transitions by detecting critical temperatures
+* Critical temperatures are alignment thresholds across languages, where universal semantic patterns may emerge
 * This speculative approach is inspired by the **Platonic representation hypothesis** 
 
 **Key Research Questions:**
