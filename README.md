@@ -253,7 +253,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 ## 📚 References
 
 - [LaBSE: Language-agnostic BERT Sentence Embedding](https://arxiv.org/abs/2007.01852)
-- [Ising Model and Phase Transitions](https://en.wikipedia.org/wiki/Ising_model)
+- [The Ising model celebrates a century of interdisciplinary contributions](https://www.nature.com/articles/s44260-024-00012-0)
 - [Correlation Length in Critical Phenomena](https://en.wikipedia.org/wiki/Correlation_length)
 
 ---
