@@ -59,8 +59,13 @@ Do words meaning "dog" in 70+ languages share a common latent semantic structure
 ### Visualize multilingual concept mappings
 <img src="https://github.com/user-attachments/assets/29af9400-1be4-49c2-92b5-cd2925a001ac" width="100%"/>
 
-### Identify critical convergences across languages from alignment simulations
-<img src="https://github.com/user-attachments/assets/4ed4c23b-0814-427f-b271-32959b6bb7e6" width="100%"/>
+### Identify critical thresholds from converging, multilignual concept alignments
+<img src="https://github.com/user-attachments/assets/8b658837-fceb-4505-910a-483db73f8d0f" width="100%"/>
+
+### Configuration Sidebar
+<img src="https://github.com/user-attachments/assets/930b3b43-a08d-4e61-adfd-711528d28f0e" width="100%"/>
+
+
 
 ---
 
