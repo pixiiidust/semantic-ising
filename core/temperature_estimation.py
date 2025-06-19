@@ -153,7 +153,7 @@ def estimate_max_temperature(vectors: np.ndarray) -> float:
 
 
 def estimate_practical_range(vectors: np.ndarray, 
-                           padding: float = 0.2,
+                           padding: float = 0.1,
                            min_span: float = 0.75,
                            min_tmin: float = 0.05,
                            config_max_temperature: float = None) -> Tuple[float, float]:
@@ -165,7 +165,7 @@ def estimate_practical_range(vectors: np.ndarray,
     
     Args:
         vectors: Normalized vectors of shape (n_vectors, dim)
-        padding: Fractional padding to add to range (default: 0.2 = 20%)
+        padding: Fractional padding to add to range (default: 0.1 = 10%)
         min_span: Minimum span required (default: 0.75)
         min_tmin: Minimum temperature floor (default: 0.05)
         config_max_temperature: Maximum temperature from config file (optional)
@@ -186,7 +186,7 @@ def estimate_practical_range(vectors: np.ndarray,
     # Apply more conservative bounds for stability
     # For LaBSE vectors, interactions are typically very small
     # Use more conservative estimates to prevent divergence
-    tmax_estimate = min(tmax_estimate, 8.0)  # Increased from 2.0 to 8.0
+    tmax_estimate = min(tmax_estimate, 5.0)  # Reduced from 8.0 to 5.0 for faster simulations
     tmax_estimate = max(tmax_estimate, tc_estimate * 1.5)  # Ensure tmax > tc
     
     # Apply lower bound floor: Tmin = max(0.05, 0.1 × S_avg)
@@ -206,7 +206,7 @@ def estimate_practical_range(vectors: np.ndarray,
         tmax = min(tmax, config_max_temperature)
     
     # Apply additional conservative bounds
-    tmax = min(tmax, 15.0)  # Increased from 3.0 to 15.0
+    tmax = min(tmax, 8.0)  # Reduced from 15.0 to 8.0 for faster simulations
     
     # Ensure minimum span
     if tmax - tmin < min_span:
@@ -218,7 +218,7 @@ def estimate_practical_range(vectors: np.ndarray,
         if config_max_temperature is not None:
             tmax = min(config_max_temperature, center + half_span)
         else:
-            tmax = min(3.0, center + half_span)  # Respect upper bound
+            tmax = min(2.0, center + half_span)  # Reduced from 3.0 to 2.0 for faster simulations
     
     # Validate the range
     is_valid, message = validate_temperature_range(tmin, tmax)
