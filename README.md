@@ -1,8 +1,8 @@
 # Semantic Ising Simulator (Alpha Ver.)
 
 A multilingual semantic Ising model simulator that: 
-* explores how semantically identical words across languages potentially converge in their embedding space under Ising dynamics. 
-* visualizes multilingual alignments to reveal latent structure approaching critical temperature.
+1. Explores how semantically identical words across languages potentially converge in their embedding space (under Ising dynamics). 
+2. Visualizes multilingual alignments to reveal latent structure approaching critical temperature.
 
 ---
 
