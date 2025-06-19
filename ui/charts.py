@@ -344,11 +344,13 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
                 anchor_coords = None
         
         # Adjust languages if needed
-        if len(languages) != len(tc_vectors):
-            warning_msg = f"[Warning: {len(languages)} language codes, {len(tc_vectors)} vectors. Showing generic labels.]"
-            languages = [f'Lang_{i}' for i in range(len(tc_vectors))]
+        if len(languages) != len(language_coords):
+            warning_msg = f"[Warning: {len(languages)} language codes, {len(language_coords)} vectors. Showing generic labels.]"
+            languages = [f'Lang_{i}' for i in range(len(language_coords))]
+            logger.warning(f"Language code mismatch: {len(languages)} codes vs {len(language_coords)} vectors")
         else:
             warning_msg = None
+            logger.info(f"Using {len(languages)} language codes for {len(language_coords)} vectors")
         
         # Prepare hover texts with language code and name
         hover_texts = [
