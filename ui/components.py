@@ -39,10 +39,17 @@ def get_available_concepts() -> List[Dict[str, any]]:
                 # Extract concept name from filename
                 # Handle different naming patterns:
                 # - dog_translations.json -> dog
-                # - dog_translations_72.json -> dog (72 languages)
+                # - dog_translations_25.json -> dog (25 languages)
+                # - dog_translations_75.json -> dog (75 languages)
+                # - i_love_you_translations_25.json -> i love you (25 languages)
                 concept_name = filename.replace("_translations.json", "")
-                concept_name = concept_name.replace("_translations_72.json", "")
-                concept_name = concept_name.replace("_translations_", "_")
+                concept_name = concept_name.replace("_translations_25.json", "")
+                concept_name = concept_name.replace("_translations_75.json", "")
+                concept_name = concept_name.replace("_translations_72.json", "")  # Legacy support
+                concept_name = concept_name.replace("_translations_", "_")  # Fallback
+                
+                # Convert underscores to spaces for better display
+                display_concept_name = concept_name.replace("_", " ")
                 
                 # Count languages in the file
                 try:
@@ -55,12 +62,13 @@ def get_available_concepts() -> List[Dict[str, any]]:
                 
                 # Create display name that includes language count
                 if "_72" in filename:
-                    display_name = f"{concept_name} ({language_count} languages)"
+                    display_name = f"{display_concept_name} ({language_count} languages)"
                 else:
-                    display_name = f"{concept_name} ({language_count} languages)"
+                    display_name = f"{display_concept_name} ({language_count} languages)"
                 
                 concept_files.append({
                     'concept_name': concept_name,
+                    'display_concept_name': display_concept_name,
                     'display_name': display_name,
                     'filename': filename,
                     'filepath': filepath,
@@ -112,7 +120,7 @@ def render_concept_selection() -> Tuple[str, Dict[str, any]]:
     # File information display (collapsed by default)
     if selected_concept_info:
         with st.expander("📁 File Information", expanded=False):
-            st.markdown(f"**Concept:** {selected_concept_info['concept_name'].title()}")
+            st.markdown(f"**Concept:** {selected_concept_info['display_concept_name'].title()}")
             st.markdown(f"**Languages:** {selected_concept_info['language_count']}")
             st.markdown(f"**File:** {selected_concept_info['filename']}")
             st.markdown(f"**Location:** {selected_concept_info['filepath']}")
@@ -120,7 +128,7 @@ def render_concept_selection() -> Tuple[str, Dict[str, any]]:
             mod_time = datetime.datetime.fromtimestamp(selected_concept_info['modification_time'])
             st.markdown(f"**Last Modified:** {mod_time.strftime('%Y-%m-%d %H:%M:%S')}")
     
-    return selected_concept_info['concept_name'] if selected_concept_info else None, selected_concept_info
+    return selected_concept_info['display_concept_name'] if selected_concept_info else None, selected_concept_info
 
 
 def render_anchor_config() -> Tuple[str, bool]:

@@ -544,7 +544,9 @@ def render_overview_tab(concept: str,
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.metric("Concept", concept.title())
+            # Convert concept name to proper display format
+            display_concept = concept.replace("_", " ").title()
+            st.metric("Concept", display_concept)
             st.metric("Encoder", encoder)
         
         with col2:
