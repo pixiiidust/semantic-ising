@@ -8,17 +8,17 @@ A multilingual semantic Ising model simulator that:
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Screenshots](#screenshots)
-- [Quick Start](#quick-start)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Experimental Designs](#experimental-designs)
-- [Scientific Background](#scientific-background)
-- [Recent Improvements](#recent-improvements)
-- [Contributing](#contributing)
-- [References](#references)
+- [Overview](#-overview)
+- [Features](#-features)
+- [Screenshots](#-screenshots)
+- [Quick Start](#-quick-start)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Experimental Designs](#-experimental-designs)
+- [Scientific Background](#-scientific-background)
+- [Recent Improvements](#-recent-improvements)
+- [Contributing](#-contributing)
+- [References](#-references)
 
 ---
 
