@@ -414,7 +414,7 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
                 textposition="top center",
                 marker=dict(
                     size=15,
-                    color='#00D4AA',  # Different color to distinguish from meta-vector
+                    color='#FFD600',  # Changed to yellow
                     line=dict(width=2, color='white'),
                     symbol='diamond'  # Different symbol to distinguish from meta-vector
                 ),
