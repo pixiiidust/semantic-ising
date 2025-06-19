@@ -32,7 +32,6 @@ The UI modules provide an interactive web interface for the Semantic Ising Simul
 - `render_metrics_summary(analysis_results)` - Display key metrics
 - `render_critical_temperature_display(tc)` - Display critical temperature
 - `render_anchor_comparison_summary(comparison_metrics)` - Display anchor comparison
-- `render_power_law_summary(power_law_data)` - Display power law analysis
 - `render_export_buttons(simulation_results, analysis_results)` - Export functionality
 - `render_error_message(message)` - Error display
 - `render_success_message(message)` - Success display
@@ -84,10 +83,13 @@ The UI modules provide an interactive web interface for the Semantic Ising Simul
 
 **Features**:
 - Concept and encoder selection
-- Temperature range configuration
+- Temperature range configuration with auto-estimation
 - Anchor language configuration
-- Real-time simulation monitoring
-- Results display with metrics
+- Real-time simulation monitoring with progress bars
+- Results display with 3-tab structure:
+  - **📈 Metrics**: Main simulation metrics (alignment, entropy, energy, correlation length)
+  - **🔄 Convergence**: Convergence analysis and entropy vs correlation length
+  - **📋 Details**: Simulation configuration and parameters
 - Export functionality integration
 
 ### 🔗 `tabs/anchor_comparison.py`
@@ -184,84 +186,3 @@ with tab2:
 with tab3:
     render_anchor_comparison_tab()
 ```
-
-### Custom Chart Configuration
-```python
-from ui.charts import plot_full_umap_projection
-
-# Create UMAP plot with anchor highlighting
-fig = plot_full_umap_projection(
-    simulation_results, 
-    analysis_results, 
-    anchor_language="en"
-)
-
-# Customize display
-fig.update_layout(
-    title="UMAP Projection at Critical Temperature",
-    width=800,
-    height=600
-)
-```
-
-## 🎨 Styling and Themes
-
-### Consistent Design
-- **Color Scheme**: Consistent color palette across all components
-- **Typography**: Unified font and text styling
-- **Layout**: Responsive design with proper spacing
-- **Icons**: Emoji-based visual indicators
-
-### Interactive Elements
-- **Sidebar Configuration**: Clean parameter controls
-- **Progress Indicators**: Real-time simulation progress
-- **Status Messages**: Clear feedback for user actions
-- **Export Buttons**: Easy access to result downloads
-
-## 🧪 Testing
-
-UI components have comprehensive test coverage:
-
-- **Component Tests**: Individual component functionality
-- **Integration Tests**: Tab and chart integration
-- **Visual Tests**: Chart generation and styling
-- **Error Handling**: Graceful error display
-
-Run UI tests with:
-```bash
-pytest tests/test_ui.py -v
-pytest tests/test_ui_integration.py -v
-```
-
-## 📱 User Experience
-
-### Workflow Design
-1. **Overview Tab**: Learn about the simulator and scientific background
-2. **Simulation Tab**: Configure and run experiments
-3. **Anchor Comparison Tab**: Analyze results and anchor relationships
-
-### Accessibility Features
-- **Clear Navigation**: Intuitive tab structure
-- **Helpful Tooltips**: Context-sensitive information
-- **Error Messages**: Clear feedback for issues
-- **Export Options**: Multiple format support
-
-### Performance Optimization
-- **Lazy Loading**: Charts generated on demand
-- **Caching**: Simulation results cached for reuse
-- **Memory Management**: Efficient data handling
-- **Responsive Design**: Works on different screen sizes
-
-## 📚 References
-
-- **Streamlit**: Web application framework
-- **Plotly**: Interactive visualization library
-- **UMAP**: Dimensionality reduction algorithm
-- **Material Design**: UI/UX design principles 
-
-## 📝 Recent UI/UX Updates
-- Section headers and chart explanations updated for clarity and professionalism.
-- Convergence summary chart now only shows the vertical Tc line (critical temperature), with the convergence threshold line removed.
-- Anchor comparison tab is cleaner, with collapsible sections and no redundant metrics.
-- All debug output removed from user-facing UI.
-- UI and backend now always use the same Tc value for both display and charting, ensuring perfect synchronization. 

@@ -9,6 +9,9 @@ import plotly.express as px
 from typing import Dict, Any, Optional, List
 import logging
 import streamlit as st
+from matplotlib import cm
+from matplotlib.colors import Normalize
+from scipy.stats import linregress
 
 logger = logging.getLogger(__name__)
 
@@ -1124,4 +1127,201 @@ def plot_entropy_vs_correlation_length(simulation_results: Dict[str, Any]) -> go
         
     except Exception as e:
         logger.error(f"Error creating entropy vs correlation length plot: {e}")
-        return go.Figure() 
+        return go.Figure()
+
+def plot_power_law_analysis(power_law_analysis: Dict[str, Any]) -> go.Figure:
+    """
+    Plot power law analysis results showing cluster size distribution
+    
+    Args:
+        power_law_analysis: Dictionary containing power law analysis results
+        
+    Returns:
+        plotly.graph_objects.Figure: Interactive power law plot
+    """
+    try:
+        # Check if required data exists
+        if not power_law_analysis or 'cluster_sizes' not in power_law_analysis:
+            logger.warning("Missing power law analysis data")
+            return go.Figure()
+        
+        cluster_sizes = power_law_analysis.get('cluster_sizes', [])
+        cluster_counts = power_law_analysis.get('cluster_counts', [])
+        exponent = power_law_analysis.get('exponent', np.nan)
+        r_squared = power_law_analysis.get('r_squared', 0.0)
+        fitted_sizes = power_law_analysis.get('fitted_sizes', [])
+        fitted_counts = power_law_analysis.get('fitted_counts', [])
+        
+        # Check for valid data
+        if len(cluster_sizes) == 0 or len(cluster_counts) == 0:
+            logger.warning("Empty cluster size or count data")
+            return go.Figure()
+        
+        # Create the main plot
+        fig = go.Figure()
+        
+        # Plot actual cluster size distribution
+        fig.add_trace(go.Scatter(
+            x=cluster_sizes,
+            y=cluster_counts,
+            mode='markers',
+            name='Observed',
+            marker=dict(
+                color='#1f77b4',
+                size=8,
+                symbol='circle'
+            ),
+            hovertemplate='Size: %{x}<br>Count: %{y}<extra></extra>'
+        ))
+        
+        # Plot fitted power law if available
+        if len(fitted_sizes) > 0 and len(fitted_counts) > 0:
+            fig.add_trace(go.Scatter(
+                x=fitted_sizes,
+                y=fitted_counts,
+                mode='lines',
+                name=f'Power Law Fit (α={exponent:.2f})',
+                line=dict(
+                    color='red',
+                    width=2,
+                    dash='dash'
+                ),
+                hovertemplate='Size: %{x}<br>Fitted Count: %{y}<extra></extra>'
+            ))
+        
+        # Update layout
+        title = f"Power Law Analysis (R² = {r_squared:.3f})"
+        if not np.isnan(exponent):
+            title += f", α = {exponent:.2f}"
+        
+        fig.update_layout(
+            title=title,
+            xaxis_title="Cluster Size",
+            yaxis_title="Number of Clusters",
+            template="plotly_dark",
+            showlegend=True,
+            hovermode='x unified',
+            xaxis_type='log',
+            yaxis_type='log'
+        )
+        
+        # Add annotation for power law interpretation
+        if not np.isnan(exponent) and r_squared > 0.7:
+            interpretation = "Strong power law behavior detected"
+            color = "green"
+        elif not np.isnan(exponent) and r_squared > 0.5:
+            interpretation = "Moderate power law behavior detected"
+            color = "orange"
+        else:
+            interpretation = "No significant power law behavior"
+            color = "red"
+        
+        fig.add_annotation(
+            x=0.02,
+            y=0.98,
+            xref='paper',
+            yref='paper',
+            text=interpretation,
+            showarrow=False,
+            font=dict(color=color, size=12),
+            bgcolor='rgba(0,0,0,0.7)',
+            bordercolor=color,
+            borderwidth=1
+        )
+        
+        return fig
+        
+    except Exception as e:
+        logger.error(f"Error creating power law plot: {e}")
+        # Return empty figure on error
+        return go.Figure()
+
+def plot_power_law_aggregate(simulation_results: Dict[str, Any]) -> go.Figure:
+    """
+    Plot log-log scatter of (cluster size, number of clusters) for all temperature steps,
+    colored by temperature, with a log-log linear fit overlay.
+    """
+    cluster_stats = simulation_results.get('cluster_stats_per_temperature', [])
+    if not cluster_stats:
+        return go.Figure()
+    
+    # Aggregate all (s, N(s), T) points
+    xs = []  # cluster sizes
+    ys = []  # number of clusters of that size
+    ts = []  # temperature
+    for stat in cluster_stats:
+        T = stat['temperature']
+        sizes = stat['cluster_sizes']
+        if not sizes:
+            continue
+        # Count number of clusters of each size
+        unique, counts = np.unique(sizes, return_counts=True)
+        for s, n in zip(unique, counts):
+            xs.append(s)
+            ys.append(n)
+            ts.append(T)
+    if not xs:
+        return go.Figure()
+    xs = np.array(xs)
+    ys = np.array(ys)
+    ts = np.array(ts)
+    
+    # Log-log fit (only for points with s > 0 and n > 0)
+    mask = (xs > 0) & (ys > 0)
+    log_x = np.log(xs[mask])
+    log_y = np.log(ys[mask])
+    if len(log_x) > 1:
+        slope, intercept, r_value, _, _ = linregress(log_x, log_y)
+        fit_line = np.exp(intercept) * xs[mask] ** slope
+    else:
+        slope, intercept, r_value = np.nan, np.nan, 0.0
+        fit_line = np.zeros_like(xs[mask])
+    
+    # Color by temperature using a colormap
+    norm = Normalize(vmin=np.min(ts), vmax=np.max(ts))
+    cmap = cm.get_cmap('plasma')
+    colors = [f'rgb{cm.colors.to_rgb(cmap(norm(t)))}' for t in ts]
+    
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=xs,
+        y=ys,
+        mode='markers',
+        marker=dict(
+            color=ts,
+            colorscale='Plasma',
+            colorbar=dict(title='Temperature'),
+            size=8,
+            line=dict(width=0.5, color='DarkSlateGrey')
+        ),
+        name='(s, N(s))',
+        hovertemplate='Cluster size: %{x}<br>Count: %{y}<br>Temp: %{marker.color:.3f}<extra></extra>'
+    ))
+    # Overlay log-log fit
+    if len(log_x) > 1:
+        fig.add_trace(go.Scatter(
+            x=xs[mask],
+            y=fit_line,
+            mode='lines',
+            line=dict(color='red', width=2, dash='dash'),
+            name=f'Log-Log Fit (slope={slope:.2f}, R²={r_value**2:.2f})',
+            hoverinfo='skip'
+        ))
+    fig.update_layout(
+        title='Power Law Distribution Across All Temperatures',
+        xaxis_title='Cluster Size (log)',
+        yaxis_title='Number of Clusters (log)',
+        xaxis_type='log',
+        yaxis_type='log',
+        template='plotly_dark',
+        showlegend=True
+    )
+    # Add annotation for fit
+    if len(log_x) > 1:
+        fig.add_annotation(
+            x=0.05, y=0.95, xref='paper', yref='paper',
+            text=f'Fit slope: {slope:.2f}<br>R²: {r_value**2:.2f}',
+            showarrow=False, font=dict(size=12, color='white'),
+            bgcolor='rgba(0,0,0,0.7)'
+        )
+    return fig 

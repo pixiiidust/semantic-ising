@@ -39,10 +39,11 @@ A multilingual semantic Ising model simulator that:
 - **🌍 Multilingual Support**: 70+ languages with LaBSE embeddings
 - **🔥 Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
 - **🎯 Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
+- **🌡️ Smart Temperature Estimation**: Auto-estimation with configurable limits and conservative energy scaling
 - **🔗 Anchor Language Analysis**: Single-phase vs two-phase experimental designs
 - **📊 Interactive Visualizations**: UMAP projections, entropy curves, correlation analysis
 - **📈 Advanced Metrics**: Cosine distance and similarity for anchor comparison
-- **🖥️ Streamlit UI**: User-friendly interface with real-time simulation monitoring
+- **🖥️ Streamlit UI**: User-friendly interface with real-time simulation monitoring and progress tracking
 
 ---
 
@@ -100,10 +101,16 @@ streamlit run app.py
 - **Language codes**: ISO 639-1 standard
 - **Translations**: Single words or short phrases
 
+**⚠️ Important Limitation:**
+- **Current version only supports the same concept across different languages**
+- Each JSON file must contain translations of the **same semantic concept** (e.g., all words meaning "dog")
+- **Do not mix different concepts** in the same file (e.g., mixing "dog" and "tree" translations)
+- The system assumes all translations in a file are semantically equivalent for proper Ising dynamics analysis
+
 ### 4. Usage Steps
 
 1. **Select Concept**: Choose a concept (e.g., "dog", "tree", "house")
-2. **Set Temperature Range**: Use auto-estimate or set manually (0.1-5.0)
+2. **Set Temperature Range**: Use auto-estimate (recommended) or set manually (0.1-5.0)
 3. **Configure Anchor**: Choose anchor language and include/exclude from dynamics
 4. **Run Simulation**: Click "Run Simulation" and watch the magic happen!
 
@@ -209,10 +216,13 @@ The simulator applies statistical physics concepts to semantic analysis:
 
 ## 📝 Recent Improvements
 
-- UI and backend are now tightly synchronized for critical temperature (Tc) display: the value shown in the UI and the vertical line in charts are always consistent.
-- The convergence summary chart now only shows the vertical Tc line, improving clarity.
-- Anchor comparison and simulation tabs have been cleaned up for a more professional, user-friendly experience.
-- All debug output has been removed from the user interface.
+- **Temperature Estimation**: Enhanced auto-estimation with configurable max temperature limits and conservative 2.0× energy fluctuation multiplier
+- **UI Streamlining**: Removed non-functional power law analysis tab from simulation results for cleaner interface
+- **Progress Tracking**: Real-time progress bars and status updates during temperature sweeps
+- **Config Integration**: Temperature estimation now respects maximum temperature settings from config files
+- **UI and backend synchronization**: Critical temperature (Tc) display is consistent between UI and charts
+- **Convergence Analysis**: Enhanced convergence summary with entropy vs correlation length visualization
+- **Professional UI**: Cleaner, more user-friendly interface with improved explanations and removed debug output
 
 ---
 

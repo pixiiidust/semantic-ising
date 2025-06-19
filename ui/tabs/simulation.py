@@ -242,12 +242,6 @@ def display_simulation_results() -> None:
             # Display interpretation
             display_anchor_interpretation(analysis_results['anchor_comparison'])
         
-        # Display power law analysis if available
-        if analysis_results and 'power_law_analysis' in analysis_results:
-            st.subheader("📈 Power Law Analysis")
-            from ui.components import render_power_law_summary
-            render_power_law_summary(analysis_results['power_law_analysis'])
-        
     except Exception as e:
         logger.error(f"Error displaying simulation results: {e}")
         render_error_message(e, "displaying results")

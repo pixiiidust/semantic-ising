@@ -212,7 +212,7 @@ return {
   
   ["core/temperature_estimation.py"] = {
     function = "estimate_max_temperature",
-    purpose = "Estimate maximum temperature from local field energy fluctuations",
+    purpose = "Estimate maximum temperature from local field energy fluctuations (uses 2.0× multiplier for conservative estimates)",
     depends_on = {},
     produces = {"estimated_tmax"},
     status = "COMPLETE"
@@ -220,7 +220,7 @@ return {
   
   ["core/temperature_estimation.py"] = {
     function = "estimate_practical_range",
-    purpose = "Estimate practical temperature range with padding and validation",
+    purpose = "Estimate practical temperature range with config max temperature respect and padding validation",
     depends_on = {"core/temperature_estimation.py"},
     produces = {"tmin", "tmax"},
     status = "COMPLETE"
@@ -360,8 +360,8 @@ return {
   
   -- 10. Phase detection and clustering (Phase 4 - Complete)
   ["core/phase_detection.py"] = {
-    function = "find_critical_temperature, detect_powerlaw_regime",
-    purpose = "find_critical_temperature now uses log(xi) derivative (knee in correlation length) as the default method for Tc detection; alignment-based and Binder cumulant methods are fallback only.",
+    function = "find_critical_temperature",
+    purpose = "find_critical_temperature uses log(xi) derivative (knee in correlation length) as the default method for Tc detection; alignment-based and Binder cumulant methods are fallback only.",
     depends_on = {"core/dynamics.py", "core/clustering.py"},
     produces = {"critical_temperature"},
     status = "COMPLETE"
@@ -510,8 +510,8 @@ return {
   -- 14. Post-simulation analysis (Phase 7 - Complete)
   ["core/post_analysis.py"] = {
     function = "analyze_simulation_results",
-    purpose = "Perform post-simulation analysis including anchor comparison",
-    depends_on = {"core/comparison_metrics.py", "core/phase_detection.py"},
+    purpose = "Perform post-simulation analysis including anchor comparison and correlation analysis",
+    depends_on = {"core/comparison_metrics.py"},
     produces = {"analysis_results"},
     status = "COMPLETE"
   },
@@ -616,8 +616,8 @@ return {
   
   -- 16. UI components (Phase 9 - COMPLETE)
   ["ui/charts.py"] = {
-    function = "plot_entropy_vs_temperature, plot_full_umap_projection, plot_correlation_decay, plot_correlation_length_vs_temperature, plot_convergence_summary, ...",
-    purpose = "Plotly chart generation for UI. Convergence summary chart now only shows the vertical Tc line (critical temperature), with the convergence threshold line removed. Improved synchronization of Tc between backend and UI.",
+    function = "plot_entropy_vs_temperature, plot_full_umap_projection, plot_correlation_decay, plot_correlation_length_vs_temperature, plot_convergence_summary, plot_entropy_vs_correlation_length, ...",
+    purpose = "Plotly chart generation for UI. Convergence summary chart shows the vertical Tc line (critical temperature). Improved synchronization of Tc between backend and UI. Enhanced convergence analysis with entropy vs correlation length visualization.",
     depends_on = {},
     produces = {"plotly_figure"},
     status = "COMPLETE"
@@ -641,7 +641,7 @@ return {
   
   ["ui/tabs/simulation.py"] = {
     function = "render_simulation_tab",
-    purpose = "Simulation tab with results and convergence analysis. Tc value is now always synchronized between UI display and chart. Debug output removed.",
+    purpose = "Simulation tab with 3-tab results structure: Metrics, Convergence Analysis, and Details. Features auto-estimation temperature configuration, real-time progress tracking, and enhanced convergence analysis. Power law functionality removed for cleaner interface.",
     depends_on = {"ui/components.py", "ui/charts.py"},
     produces = {"simulation_display"},
     status = "COMPLETE"

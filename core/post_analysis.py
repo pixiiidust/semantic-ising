@@ -15,7 +15,6 @@ import logging
 
 # Import existing core modules
 from .comparison_metrics import compare_anchor_to_multilingual
-from .phase_detection import detect_powerlaw_regime
 from .dynamics import compute_correlation_length, compute_correlation_matrix
 
 # Set up logging
@@ -117,11 +116,6 @@ def analyze_simulation_results(
                         'kl_divergence': np.nan,
                         'cosine_similarity': np.nan
                     },
-                    'power_law_analysis': {
-                        'exponent': np.nan,
-                        'r_squared': 0.0,
-                        'n_clusters': 0
-                    },
                     'correlation_analysis': {
                         'correlation_length': np.nan,
                         'correlation_matrix': np.array([])
@@ -149,18 +143,6 @@ def analyze_simulation_results(
             'cosine_similarity': np.nan
         }
     
-    # Perform power law analysis at critical temperature
-    try:
-        power_law_analysis = detect_powerlaw_regime(tc_vectors, actual_tc)
-        logger.info("Power law analysis completed successfully")
-    except Exception as e:
-        logger.error(f"Power law analysis failed: {e}")
-        power_law_analysis = {
-            'exponent': np.nan,
-            'r_squared': 0.0,
-            'n_clusters': 0
-        }
-    
     # Perform correlation analysis at critical temperature
     try:
         correlation_length = compute_correlation_length(tc_vectors)
@@ -181,7 +163,6 @@ def analyze_simulation_results(
     analysis_results = {
         'critical_temperature': actual_tc,
         'anchor_comparison': anchor_comparison,
-        'power_law_analysis': power_law_analysis,
         'correlation_analysis': correlation_analysis
     }
     
@@ -253,7 +234,6 @@ def generate_visualization_data(
     # Extract analysis components
     critical_temperature = analysis_results.get('critical_temperature', np.nan)
     anchor_comparison = analysis_results.get('anchor_comparison', {})
-    power_law = analysis_results.get('power_law_analysis', {})
     correlation_data = analysis_results.get('correlation_analysis', {})
     
     # Prepare visualization data structure
@@ -261,7 +241,6 @@ def generate_visualization_data(
         'temperature_curves': temperature_curves,
         'critical_temperature': critical_temperature,
         'anchor_comparison': anchor_comparison,
-        'power_law': power_law,
         'correlation_data': correlation_data
     }
     
@@ -273,7 +252,7 @@ def generate_visualization_data(
         logger.info("No vector snapshots available for evolution plots")
     
     # Validate visualization data structure
-    required_keys = ['temperature_curves', 'critical_temperature', 'anchor_comparison', 'power_law', 'correlation_data']
+    required_keys = ['temperature_curves', 'critical_temperature', 'anchor_comparison', 'correlation_data']
     for key in required_keys:
         if key not in viz_data:
             logger.warning(f"Missing required key in visualization data: {key}")
@@ -311,19 +290,6 @@ def interpret_analysis_results(analysis_results: Dict[str, Any]) -> Dict[str, st
             interpretations['anchor_similarity'] = "Weak semantic similarity detected between anchor and multilingual structure"
     else:
         interpretations['anchor_similarity'] = "Anchor similarity analysis unavailable"
-    
-    # Interpret power law results
-    power_law = analysis_results.get('power_law_analysis', {})
-    exponent = power_law.get('exponent', np.nan)
-    r_squared = power_law.get('r_squared', 0.0)
-    
-    if not np.isnan(exponent) and r_squared > 0.5:
-        if exponent > 2.0:
-            interpretations['power_law'] = f"Strong power law behavior detected (exponent: {exponent:.2f}, R²: {r_squared:.2f})"
-        else:
-            interpretations['power_law'] = f"Moderate power law behavior detected (exponent: {exponent:.2f}, R²: {r_squared:.2f})"
-    else:
-        interpretations['power_law'] = "No significant power law behavior detected"
     
     # Interpret correlation results
     correlation_data = analysis_results.get('correlation_analysis', {})

@@ -2,14 +2,14 @@
 # v0.2 API locked
 
 # Temperature sweep parameters
-temperature_range: [0.1, 3.0]
-temperature_steps: 50
+temperature_range: [0.1, 10.0]
+temperature_steps: 50 # Default number of temperature steps
 
 # Default encoder model
 default_encoder: "sentence-transformers/LaBSE"
 
 # Supported languages for multilingual experiments
-supported_languages: ["en", "es", "fr", "de", "it", "pt", "ru", "zh", "ja", "ko"]
+supported_languages: ["en", "fr", "es", "de", "it", "pt", "nl", "ru", "zh", "ja", "af", "am", "ar", "az", "be", "bg", "bn", "bs", "ca", "cs", "cy", "da", "el", "et", "fa", "fi", "ga", "gl", "gu", "he", "hi", "hr", "hu", "hy", "id", "is", "ka", "kk", "km", "kn", "ku", "ky", "la", "lo", "lt", "lv", "mk", "ml", "mn", "mr", "ms", "my", "ne", "no", "pa", "pl", "ro", "sk", "sl", "sq", "sr", "su", "sv", "ta", "te", "th", "tl", "tr", "uk", "ur", "vi", "xh", "yi", "yo", "zu"]
 
 # Anchor configuration
 anchor_config:
@@ -17,7 +17,7 @@ anchor_config:
   include_anchor_default: false
 
 # Vector storage options
-store_all_temperatures: false
+store_all_temperatures: true
 
 # UMAP parameters
 umap_params:
@@ -38,8 +38,8 @@ simulation_params:
 
 # Clustering parameters
 cluster_params:
-  similarity_threshold: 0.8
-  min_cluster_size: 2
+  similarity_threshold: 0.8  # Base threshold (actual threshold varies with temperature: 0.8-0.95)
+  min_cluster_size: 1
 
 # Correlation analysis parameters
 lambda_distance: 0.5  # Exponential decay parameter for linguistic distance weighting 

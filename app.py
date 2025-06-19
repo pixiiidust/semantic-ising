@@ -49,12 +49,39 @@ from core.phase_detection import find_critical_temperature
 from core.post_analysis import analyze_simulation_results
 from core.temperature_estimation import estimate_practical_range
 from ui.charts import plot_entropy_vs_temperature, plot_full_umap_projection, plot_correlation_decay, plot_correlation_length_vs_temperature
-from ui.components import render_anchor_config, render_experiment_description, render_simulation_progress, render_metrics_summary, render_critical_temperature_display, render_anchor_comparison_summary, render_power_law_summary, render_export_buttons, render_error_message, render_success_message, render_warning_message, render_concept_selection
+from ui.components import render_anchor_config, render_experiment_description, render_simulation_progress, render_metrics_summary, render_critical_temperature_display, render_anchor_comparison_summary, render_export_buttons, render_error_message, render_success_message, render_warning_message, render_concept_selection
 from ui.tabs.simulation import render_simulation_tab
 from ui.tabs.anchor_comparison import render_anchor_comparison_tab
 from ui.tabs.overview import render_overview_tab
 
 logger = logging.getLogger(__name__)
+
+
+def load_config_defaults():
+    """Load default configuration values from YAML file"""
+    try:
+        import yaml
+        config_path = os.path.join(os.path.dirname(__file__), 'config', 'defaults.yaml')
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        
+        # Extract temperature-related defaults
+        temp_range = config.get('temperature_range', [0.1, 3.0])
+        temp_steps = config.get('temperature_steps', 50)
+        
+        return {
+            'temp_min': temp_range[0],
+            'temp_max': temp_range[1], 
+            'temp_steps': temp_steps
+        }
+    except Exception as e:
+        logger.warning(f"Failed to load config defaults: {e}")
+        # Fallback defaults
+        return {
+            'temp_min': 0.1,
+            'temp_max': 3.0,
+            'temp_steps': 50
+        }
 
 
 def main():
@@ -68,14 +95,17 @@ def main():
             initial_sidebar_state="expanded"
         )
         
+        # Load config defaults
+        config_defaults = load_config_defaults()
+        
         # Title and description
         st.title("🧠 Semantic Ising Simulator")
         st.markdown("""
         **Multilingual semantic convergence analysis using Ising dynamics**
-        
-        This simulator tests whether semantically identical words across languages 
-        converge in embedding space under Ising dynamics, revealing universal 
-        semantic structures.
+    
+        * This simulator tests whether semantically identical words across languages 
+        converge in embedding space under Ising dynamics. 
+        * Results potentially reveal universal semantic structures approaching critical temperature.
         """)
         
         # Test mode toggle (for debugging)
@@ -95,7 +125,7 @@ def main():
             # Encoder selection
             encoder = st.selectbox(
                 "Embedding Model",
-                ["LaBSE", "mBERT", "XLM-R"],
+                ["LaBSE", "mBERT (coming soon)", "XLM-R (coming soon)"],
                 help="Select the multilingual embedding model"
             )
             
@@ -104,6 +134,9 @@ def main():
             
             # Temperature range configuration
             st.subheader("🌡️ Temperature Range")
+            
+            # Show config source info
+            st.info(f"📋 Defaults from config: {config_defaults['temp_min']:.1f}-{config_defaults['temp_max']:.1f}, {config_defaults['temp_steps']} steps")
             
             # Auto-estimate checkbox
             use_auto_estimate = st.checkbox(
@@ -129,7 +162,10 @@ def main():
                     dynamics_embeddings = embeddings[dynamics_indices]
                     
                     # Estimate temperature range
-                    estimated_tmin, estimated_tmax = estimate_practical_range(dynamics_embeddings)
+                    estimated_tmin, estimated_tmax = estimate_practical_range(
+                        dynamics_embeddings, 
+                        config_max_temperature=config_defaults['temp_max']
+                    )
                     
                     # Store in session state
                     st.session_state.estimated_range = (estimated_tmin, estimated_tmax)
@@ -148,9 +184,9 @@ def main():
                 except Exception as e:
                     st.warning(f"⚠️ Temperature estimation failed: {e}")
                     st.info("Using default range. You can uncheck auto-estimate to set manually.")
-                    # Fallback to default range
-                    tmin = 0.1
-                    tmax = 5.0
+                    # Fallback to config defaults
+                    tmin = config_defaults['temp_min']
+                    tmax = config_defaults['temp_max']
             else:
                 # Manual temperature controls
                 col1, col2 = st.columns(2)
@@ -159,7 +195,7 @@ def main():
                         "Min Temperature",
                         min_value=0.01,
                         max_value=10.0,
-                        value=0.1,
+                        value=config_defaults['temp_min'],  # Use config default
                         step=0.1,
                         format="%.2f"
                     )
@@ -167,8 +203,8 @@ def main():
                     tmax = st.number_input(
                         "Max Temperature", 
                         min_value=0.01,
-                        max_value=10.0,
-                        value=5.0,
+                        max_value=20.0,
+                        value=config_defaults['temp_max'],  # Use config default
                         step=0.1,
                         format="%.2f"
                     )
@@ -177,8 +213,8 @@ def main():
             n_steps = st.slider(
                 "Number of Steps",
                 min_value=5,
-                max_value=50,
-                value=20,
+                max_value=200,
+                value=config_defaults['temp_steps'],  # Use config default
                 help="Number of temperature points to simulate: More steps = more accurate results, but slower simulation"
             )
             
@@ -284,7 +320,7 @@ def run_simulation_workflow(concept: str,
         
         # Step 1: Loading embeddings (10%)
         status_text.text("🔄 Loading embeddings...")
-        progress_bar.progress(10)
+        progress_bar.progress(0.1)
         
         with st.spinner("🔄 Loading embeddings..."):
             # Generate embeddings
@@ -298,7 +334,7 @@ def run_simulation_workflow(concept: str,
         
         # Step 2: Configuring experiment (20%)
         status_text.text("⚙️ Configuring experiment...")
-        progress_bar.progress(20)
+        progress_bar.progress(0.2)
         
         # Extract embeddings for dynamics and anchor
         dynamics_indices = [languages.index(lang) for lang in dynamics_languages]
@@ -309,13 +345,16 @@ def run_simulation_workflow(concept: str,
         
         # Step 3: Temperature estimation (30%)
         status_text.text("🌡️ Estimating temperature range...")
-        progress_bar.progress(30)
+        progress_bar.progress(0.3)
         
         # Temperature estimation already done in sidebar if auto-estimate is enabled
         # Just verify we have the range stored
         if 'estimated_range' not in st.session_state:
             try:
-                estimated_tmin, estimated_tmax = estimate_practical_range(dynamics_embeddings)
+                estimated_tmin, estimated_tmax = estimate_practical_range(
+                    dynamics_embeddings, 
+                    config_max_temperature=config_defaults['temp_max']
+                )
                 st.session_state.estimated_range = (estimated_tmin, estimated_tmax)
                 st.info(f"Auto-estimated range: {estimated_tmin:.3f} - {estimated_tmax:.3f}")
             except Exception as e:
@@ -324,25 +363,34 @@ def run_simulation_workflow(concept: str,
         
         # Step 4: Running temperature sweep (60%)
         status_text.text("⚙️ Running temperature sweep...")
-        progress_bar.progress(40)
+        progress_bar.progress(0.4)
         
         # Show expected duration
         n_temps = len(T_range)
         n_sweeps = 10  # n_sweeps_per_temperature
         st.info(f"⏱️ Expected duration: ~{n_temps * n_sweeps * 2} seconds (processing {n_temps} temperatures × {n_sweeps} sweeps each)")
         
-        # Run simulation with config parameters
+        # Create progress callback for real-time updates
+        def update_progress(progress_percent, status_message):
+            # Scale progress from 0-100 to 0.4-0.6 (temperature sweep range)
+            # Convert percentage to 0.0-1.0 range
+            scaled_progress = 0.4 + (progress_percent / 100.0) * 0.2  # 0.4 to 0.6
+            progress_bar.progress(scaled_progress)
+            status_text.text(status_message)
+        
+        # Run simulation with config parameters and progress callback
         simulation_results = run_temperature_sweep(
             dynamics_embeddings, 
             T_range,
             store_all_temperatures=True,
             n_sweeps_per_temperature=10,  # Use reasonable number of sweeps
-            sim_params=sim_params
+            sim_params=sim_params,
+            progress_callback=update_progress
         )
         
         # Update status to show simulation completed
         status_text.text("✅ Temperature sweep completed!")
-        progress_bar.progress(60)
+        progress_bar.progress(0.6)
         
         # Add dynamics vectors to simulation results for post-analysis
         simulation_results['dynamics_vectors'] = dynamics_embeddings
@@ -350,11 +398,11 @@ def run_simulation_workflow(concept: str,
         # Add languages to simulation results for UMAP plotting
         simulation_results['languages'] = dynamics_languages
         
-        progress_bar.progress(60)
+        progress_bar.progress(0.6)
         
         # Step 5: Detecting critical temperature (80%)
         status_text.text("🎯 Detecting critical temperature...")
-        progress_bar.progress(80)
+        progress_bar.progress(0.8)
         
         # Detect critical temperature
         tc = find_critical_temperature(simulation_results)
@@ -380,10 +428,10 @@ def run_simulation_workflow(concept: str,
 
         # Step 6: Performing analysis (90%)
         status_text.text("📊 Performing analysis...")
-        progress_bar.progress(90)
+        progress_bar.progress(0.9)
         
         # Step 5: Post-simulation analysis (80%)
-        progress_bar.progress(80)
+        progress_bar.progress(0.8)
         status_text.text("Performing post-simulation analysis...")
         
         try:
@@ -403,7 +451,7 @@ def run_simulation_workflow(concept: str,
         
         # Step 7: Complete (100%)
         status_text.text("✅ Simulation complete!")
-        progress_bar.progress(100)
+        progress_bar.progress(1.0)
         
         # Store results in session state
         st.session_state.simulation_results = simulation_results
@@ -494,16 +542,6 @@ def render_overview_tab(concept: str,
                     st.error("**Weak Semantic Convergence**")
                     st.write(f"Cosine similarity of {cosine_similarity:.3f} suggests limited convergence.")
             
-            # Power law insight
-            if analysis_results and 'power_law_analysis' in analysis_results:
-                power_law = analysis_results['power_law_analysis']
-                exponent = power_law.get('exponent', np.nan)
-                r_squared = power_law.get('r_squared', 0.0)
-                
-                if not np.isnan(exponent) and r_squared > 0.8:
-                    st.success("**Scale-Free Clustering Detected**")
-                    st.write(f"Power law exponent of {exponent:.3f} indicates scale-free clustering behavior typical of critical phenomena.")
-            
             # Display overview chart
             st.subheader("📊 Entropy vs Temperature")
             if 'critical_temperature' in simulation_results:
@@ -514,23 +552,22 @@ def render_overview_tab(concept: str,
             st.info("Run a simulation to see insights and visualizations.")
         
         # Display methodology
-        st.subheader("🔬 Methodology")
-        st.markdown("""
-        **Semantic Ising Model:**
-        
-        1. **Embedding Generation**: Multilingual embeddings for the target concept
-        2. **Ising Dynamics**: Temperature-dependent vector updates using Metropolis/Glauber rules
-        3. **Phase Detection**: Critical temperature detection using log(ξ) derivative method (knee in correlation length)
-        4. **Comparison Analysis**: Anchor language comparison using cosine distance and similarity
-        5. **Power Law Analysis**: Cluster size distribution analysis for critical behavior
-        
-        **Key Metrics:**
-        - **Alignment**: Average cosine similarity between vectors
-        - **Entropy**: Shannon entropy of vector distribution
-        - **Correlation Length**: Characteristic length scale of correlations
-        - **Cosine Distance**: Primary semantic distance metric for anchor comparison (0-1, lower is better)
-        - **Cosine Similarity**: Directional similarity for anchor comparison (0-1, higher is better)
-        """)
+        with st.expander("🔬 Methodology", expanded=False):
+            st.markdown("""
+            **Semantic Ising Model:**
+            
+            1. **Embedding Generation**: Multilingual embeddings for the target concept
+            2. **Ising Dynamics**: Temperature-dependent vector updates using Metropolis/Glauber rules
+            3. **Phase Detection**: Critical temperature detection using log(ξ) derivative method (knee in correlation length)
+            4. **Convergence Analysis**: Convergence Summary Across Temperatures & Entropy vs Correlation Length
+            5. **Comparison Analysis**: Anchor language comparison using cosine distance and similarity
+            
+            **Key Metrics:**
+            - **Alignment**: Average cosine similarity between vectors
+            - **Correlation Length**: Characteristic length scale of correlations
+            - **Cosine Distance**: Primary semantic distance metric for anchor comparison (0-1, lower is better)
+            - **Cosine Similarity**: Directional similarity for anchor comparison (0-1, higher is better)
+            """)
         
     except Exception as e:
         logger.error(f"Error rendering overview tab: {e}")
@@ -581,11 +618,6 @@ def create_mock_simulation_results(concept: str,
                 'emd_distance': 0.25,
                 'kl_divergence': 0.12,
                 'cosine_similarity': 0.82
-            },
-            'power_law_analysis': {
-                'exponent': 2.1,
-                'r_squared': 0.85,
-                'n_clusters': 3
             },
             'correlation_analysis': {
                 'correlation_length': 1.2,

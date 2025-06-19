@@ -54,12 +54,14 @@ The core modules implement the scientific foundation of the Semantic Ising Simul
 
 **Key Functions**:
 - `estimate_critical_temperature(vectors)` - Estimate Tc from initial similarity
-- `estimate_max_temperature(vectors)` - Estimate Tmax from energy fluctuations
-- `estimate_practical_range(vectors)` - Estimate optimal [Tmin, Tmax] range
+- `estimate_max_temperature(vectors)` - Estimate Tmax from energy fluctuations (uses 2.0× multiplier for conservative estimates)
+- `estimate_practical_range(vectors, config_max_temperature=None)` - Estimate optimal [Tmin, Tmax] range with config respect
 - `quick_scan_probe(vectors, T_range)` - Refine temperature range estimate
 
 **Features**:
-- Physics-based estimation using vector similarity
+- Physics-based estimation using vector similarity and energy fluctuations
+- Configurable max temperature parameter to respect user settings
+- Conservative 2.0× multiplier for energy fluctuation scaling
 - Automatic range validation and adjustment
 - Integration with simulation workflow
 
@@ -81,6 +83,7 @@ The core modules implement the scientific foundation of the Semantic Ising Simul
 - Memory management with configurable snapshot storage
 - Convergence detection and error handling
 - Comprehensive metric collection
+- Temperature-dependent clustering thresholds (0.8-0.95 range)
 
 ### 📊 `dynamics.py`
 **Purpose**: Correlation analysis and dynamic properties
@@ -100,11 +103,9 @@ The core modules implement the scientific foundation of the Semantic Ising Simul
 
 **Key Functions**:
 - `find_critical_temperature(metrics_dict)` - Detect Tc using the log(ξ) derivative (knee in correlation length vs temperature) as the default method. If correlation_length is not available, it falls back to the old methods.
-- `detect_powerlaw_regime(vectors, T, threshold)` - Power law analysis
 
 **Features**:
 - Robust Binder cumulant method for Tc detection
-- Power law fitting for scale-free behavior
 - Integration with clustering analysis
 
 ### 🧠 `meta_vector.py`
@@ -157,9 +158,9 @@ The core modules implement the scientific foundation of the Semantic Ising Simul
 
 **Features**:
 - Anchor comparison at critical temperature
-- Power law analysis for scale-free behavior
 - Correlation analysis and interpretation
 - Data preparation for UI visualizations
+- Comprehensive error handling and validation
 
 ### 🔬 `physics.py`
 **Purpose**: Energy calculations and physical consistency

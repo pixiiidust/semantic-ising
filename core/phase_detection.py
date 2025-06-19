@@ -147,7 +147,8 @@ def detect_powerlaw_regime(vectors: np.ndarray, T: float, threshold: float = 0.8
         threshold: Cosine similarity threshold for clustering
         
     Returns:
-        Dictionary with 'exponent', 'r_squared', and 'n_clusters' keys
+        Dictionary with 'exponent', 'r_squared', 'n_clusters', 'cluster_sizes', 
+        'cluster_counts', 'fitted_sizes', and 'fitted_counts' keys
     """
     try:
         clusters = cluster_vectors(vectors, threshold)
@@ -157,7 +158,11 @@ def detect_powerlaw_regime(vectors: np.ndarray, T: float, threshold: float = 0.8
             return {
                 'exponent': np.nan,
                 'r_squared': 0.0,
-                'n_clusters': len(clusters)
+                'n_clusters': len(clusters),
+                'cluster_sizes': [],
+                'cluster_counts': [],
+                'fitted_sizes': [],
+                'fitted_counts': []
             }
         
         # Count frequency of each cluster size
@@ -174,7 +179,11 @@ def detect_powerlaw_regime(vectors: np.ndarray, T: float, threshold: float = 0.8
             return {
                 'exponent': np.nan,
                 'r_squared': 0.0,
-                'n_clusters': len(clusters)
+                'n_clusters': len(clusters),
+                'cluster_sizes': sizes,
+                'cluster_counts': counts,
+                'fitted_sizes': [],
+                'fitted_counts': []
             }
         
         # For 3 or more unique sizes, perform the fit
@@ -184,10 +193,18 @@ def detect_powerlaw_regime(vectors: np.ndarray, T: float, threshold: float = 0.8
         # Fit power law: P(s) ~ s^(-α)
         slope, intercept, r_value, _, _ = linregress(log_sizes, log_counts)
         
+        # Generate fitted values for plotting
+        fitted_sizes = np.array(sizes)
+        fitted_counts = np.exp(intercept) * fitted_sizes**(-slope)
+        
         return {
             'exponent': -slope,
             'r_squared': r_value**2,
-            'n_clusters': len(clusters)
+            'n_clusters': len(clusters),
+            'cluster_sizes': sizes,
+            'cluster_counts': counts,
+            'fitted_sizes': fitted_sizes.tolist(),
+            'fitted_counts': fitted_counts.tolist()
         }
         
     except Exception as e:
@@ -195,5 +212,9 @@ def detect_powerlaw_regime(vectors: np.ndarray, T: float, threshold: float = 0.8
         return {
             'exponent': np.nan,
             'r_squared': 0.0,
-            'n_clusters': 0
+            'n_clusters': 0,
+            'cluster_sizes': [],
+            'cluster_counts': [],
+            'fitted_sizes': [],
+            'fitted_counts': []
         } 

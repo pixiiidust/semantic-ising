@@ -96,9 +96,11 @@ def render_overview_tab(concept: str, encoder: str, T_range: List[float],
         - Semantically identical words should converge at Tc
         - Reveals shared latent semantic structure
         - Tests universal semantic representation hypothesis
-        
-        **🔬 Methodology**:
-        
+        """)
+    
+    # Methodology
+    with st.expander("🔬 Methodology", expanded=False):
+        st.markdown("""
         **Semantic Ising Model**:
         - **Embedding Generation**: Multilingual embeddings for the target concept
         - **Ising Dynamics**: Temperature-dependent vector updates using Metropolis/Glauber rules
@@ -108,7 +110,6 @@ def render_overview_tab(concept: str, encoder: str, T_range: List[float],
         
         **Key Metrics**:
         - **Alignment**: Average cosine similarity between vectors
-        - **Entropy**: Shannon entropy of vector distribution
         - **Correlation Length**: Characteristic length scale of correlations
         - **Cosine Distance**: Primary semantic distance metric for anchor comparison (0-1, lower is better)
         - **Cosine Similarity**: Directional similarity for anchor comparison (0-1, higher is better)

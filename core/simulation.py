@@ -10,6 +10,7 @@ import logging
 from typing import Dict, List, Tuple, Any
 from core.physics import total_system_energy
 from scipy.optimize import curve_fit
+from core.clustering import cluster_vectors
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -47,7 +48,8 @@ def run_temperature_sweep(
     max_snapshots: int = 10, 
     n_replicas: int = 1,
     n_sweeps_per_temperature: int = 10,
-    sim_params: Dict[str, Any] = None
+    sim_params: Dict[str, Any] = None,
+    progress_callback: callable = None
 ) -> Dict[str, np.ndarray]:
     """
     Run temperature sweep with multi-replica support and memory management.
@@ -65,6 +67,7 @@ def run_temperature_sweep(
         n_replicas: Number of independent replicas for statistical averaging
         n_sweeps_per_temperature: Number of sweeps per temperature for ensemble statistics
         sim_params: Dictionary of simulation parameters from config
+        progress_callback: Callback function for real-time progress reporting
         
     Returns:
         Dictionary containing temperature-dependent metrics and optional vector snapshots
@@ -88,6 +91,16 @@ def run_temperature_sweep(
     if n_sweeps_per_temperature < 1:
         raise ValueError("Number of sweeps per temperature must be >= 1")
     
+    # Debug: Print min/max cosine similarity of initial vectors
+    normalized_vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+    similarities = np.dot(normalized_vectors, normalized_vectors.T)
+    # Only consider off-diagonal elements
+    triu_indices = np.triu_indices_from(similarities, k=1)
+    min_sim = np.min(similarities[triu_indices])
+    max_sim = np.max(similarities[triu_indices])
+    print(f"[DEBUG] Initial min similarity: {min_sim:.4f}, max similarity: {max_sim:.4f}")
+    logger.info(f"Initial min similarity: {min_sim:.4f}, max similarity: {max_sim:.4f}")
+    
     # Multi-replica averaging
     if n_replicas > 1:
         all_metrics = []
@@ -96,7 +109,7 @@ def run_temperature_sweep(
             np.random.seed(42 + replica)
             replica_metrics = _run_single_temperature_sweep(
                 vectors, T_range, store_all_temperatures, max_snapshots, 
-                n_sweeps_per_temperature, sim_params
+                n_sweeps_per_temperature, sim_params, progress_callback
             )
             all_metrics.append(replica_metrics)
         
@@ -106,7 +119,7 @@ def run_temperature_sweep(
         # Single replica
         return _run_single_temperature_sweep(
             vectors, T_range, store_all_temperatures, max_snapshots, 
-            n_sweeps_per_temperature, sim_params
+            n_sweeps_per_temperature, sim_params, progress_callback
         )
 
 
@@ -116,7 +129,8 @@ def _run_single_temperature_sweep(
     store_all_temperatures: bool, 
     max_snapshots: int,
     n_sweeps_per_temperature: int,
-    sim_params: Dict[str, Any] = None
+    sim_params: Dict[str, Any] = None,
+    progress_callback: callable = None
 ) -> Dict[str, np.ndarray]:
     """Run single temperature sweep (internal function)"""
     # Initialize lists to store ALL results (including diverging ones)
@@ -148,7 +162,15 @@ def _run_single_temperature_sweep(
     noise_sigma = _ensure_float(sim_params.get('noise_sigma', 0.04), 'noise_sigma', 0.04)
     update_method = sim_params.get('update_method', 'metropolis')
     
+    # Add per-temperature cluster statistics
+    cluster_stats_per_temperature = []
+    
     for i, T in enumerate(T_range):
+        # Report progress if callback is provided
+        if progress_callback is not None:
+            progress = (i / len(T_range)) * 100
+            progress_callback(progress, f"Processing temperature {T:.3f} ({i+1}/{len(T_range)})")
+        
         # Always record this temperature
         all_temperatures.append(T)
         
@@ -223,6 +245,25 @@ def _run_single_temperature_sweep(
             if store_all_temperatures and i in snapshot_indices and final_status == 'converged':
                 vector_snapshots[T] = current_vectors.copy()
             
+            # (after all Ising updates and before memory cleanup)
+            # Cluster the vectors at this temperature (use final current_vectors)
+            # Use temperature-dependent clustering threshold
+            base_threshold = sim_params.get('similarity_threshold', 0.8) if sim_params else 0.8
+            
+            # Adjust threshold based on temperature: higher T = higher threshold
+            # This ensures fewer clusters at high T (more independent) and more clusters at low T (more aligned)
+            temp_factor = min(1.0, max(0.5, T / 2.0))  # Scale factor between 0.5 and 1.0
+            similarity_threshold = base_threshold + (0.15 * temp_factor)  # Range: 0.8 to 0.95
+            
+            clusters = cluster_vectors(current_vectors, threshold=similarity_threshold)
+            cluster_sizes = [len(cluster) for cluster in clusters]
+            cluster_stats_per_temperature.append({
+                'temperature': T,
+                'n_clusters': len(clusters),
+                'cluster_sizes': cluster_sizes,
+                'clustering_threshold': similarity_threshold  # Store the actual threshold used
+            })
+            
             # Clear memory periodically
             if i % 10 == 0 and i > 0:
                 import gc
@@ -249,14 +290,17 @@ def _run_single_temperature_sweep(
     # Create result with ALL temperatures (including diverging ones)
     result = {
         'temperatures': np.array(all_temperatures),
-        **{k: np.array(v) for k, v in all_metrics.items()}
+        **{k: np.array(v) for k, v in all_metrics.items()},
+        'convergence_data': convergence_data,
+        'cluster_stats_per_temperature': cluster_stats_per_temperature,
     }
     
     if store_all_temperatures:
         result['vector_snapshots'] = vector_snapshots
     
-    # Add convergence data to results
-    result['convergence_data'] = convergence_data
+    # Report final progress
+    if progress_callback is not None:
+        progress_callback(100, "Temperature sweep completed!")
     
     return result
 

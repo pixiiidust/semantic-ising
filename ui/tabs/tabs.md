@@ -58,21 +58,25 @@ ui/tabs/
 
 **Features**:
 - Concept and encoder selection
-- Temperature range configuration
+- Temperature range configuration with auto-estimation
 - Anchor language configuration
-- Real-time simulation monitoring
-- Results display with metrics
+- Real-time simulation monitoring with progress bars
+- Results display with 3-tab structure:
+  - **📈 Metrics**: Main simulation metrics (alignment, entropy, energy, correlation length)
+  - **🔄 Convergence**: Convergence analysis and entropy vs correlation length  
+  - **📋 Details**: Simulation configuration and parameters
 - Export functionality integration
 
 **Configuration Options**:
 - **Concept Selection**: Choose from available concepts (dog, tree)
 - **Encoder Selection**: Choose embedding model (LaBSE, SBERT)
-- **Temperature Range**: Configure simulation temperature sweep
+- **Temperature Range**: Configure simulation temperature sweep with auto-estimation
 - **Anchor Configuration**: Set anchor language and inclusion mode
 
 **Results Display**:
 - **Metrics Charts**: Alignment, entropy, energy, correlation length
 - **Critical Temperature**: Detection and display
+- **Convergence Analysis**: Convergence status and entropy vs correlation length
 - **Export Options**: CSV, vectors, charts, configuration
 
 ### 🔗 `anchor_comparison.py`
