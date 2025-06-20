@@ -216,7 +216,7 @@ For an intuitive visualization of spin alignments in an Ising model, click to wa
 
 <video width="630" height="300" src="https://github.com/user-attachments/assets/c22d18dc-3e56-4713-aae5-c5a6e8cc48fb"></video>
 
-*Video Source: [@F_Sacco](https://www.youtube.com/@F_Sacco) / [francesco215.github.io](https://francesco215.github.io)*
+*Video Source: [@F_Sacco](https://youtu.be/cGcY-ReeGDU?) / [francesco215.github.io](https://francesco215.github.io)*
 
 ### Adapting the Ising Model for Semantics
 
