@@ -221,12 +221,16 @@ For an intuitive visualization of spin alignments in an Ising model, click to wa
 
 ### Adapting the Ising Model for Semantics
 
-The simulator adapts Ising Model concepts for semantic analysis across languages:
+This tool applies a continuous, semantic variant of the Ising model using multilingual concept embeddings:
 
-- **Vectors as Spins**: Multilingual concept embeddings conceived as "spin" alignments in semantic space
-- **Temperature Control**: Higher T = more randomness, Lower T = more alignment
-- **Phase Transitions**: Critical temperature (Tc) marks emergence of universal structure
-- **Correlation Length**: Characteristic scale of semantic correlations
+* **Vectors as Spins**: Embeddings (e.g. 768D LaBSE vectors) act as "spins," aligning or misaligning in semantic space.
+* **Continuous Updates**: `update_vectors_metropolis()` and `update_vectors_glauber()` perturb vectors with Gaussian noise, accepting changes based on energy shifts.
+* **Semantic Alignment**: Updates reflect meaning shifts—vectors move closer or farther in semantic space.
+* **Temperature Control**: Higher temperature (T) increases randomness; lower T encourages alignment.
+* **Phase Transitions**: At a critical temperature (Tc), global structure emerges—mirroring phase transitions.
+* **Correlation Length**: Measures the scale of semantic coherence across the system.
+
+---
 
 ### Key Metrics
 
