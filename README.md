@@ -214,7 +214,8 @@ Two modes to study multilingual semantic structure:
 
 For an intuitive visualization of spin alignments in an Ising model, see this educational clip:
 
-[![YouTube](http://i.ytimg.com/vi/wz_stb-EkYc/hqdefault.jpg)](https://youtube.com/clip/Ugkxw6ZqZOVHyjWC-d2qrbx4uUUIgc4SlXF1?)
+[![YouTube](https://github.com/user-attachments/assets/ca626ded-8031-4a1e-b6dd-f92106169e03)
+](https://youtube.com/clip/Ugkxw6ZqZOVHyjWC-d2qrbx4uUUIgc4SlXF1?)
 
 *Source: [@F_Sacco](https://www.youtube.com/@F_Sacco) / [francesco215.github.io](https://francesco215.github.io)*
 
