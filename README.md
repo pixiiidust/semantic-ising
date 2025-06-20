@@ -237,11 +237,9 @@ The simulator adapts Ising Model concepts for semantic analysis across languages
 
 ### Phase Transition Detection
 
-- The simulator now detects the critical temperature (Tc) using the log(ξ) derivative method: Tc is identified as the temperature where the correlation length (ξ) collapses (the "knee" in the plot). This is more robust and physically meaningful than previous Binder cumulant methods.
-
-- All UI and analysis now annotate Tc at the knee, matching physical expectations.
-
-For a deeper dive and visualizing the concepts behind this simulator, see the [Scientific Background](#-scientific-background) section.
+- The simulator now detects the critical temperature (Tc) using the log(ξ) derivative method.
+- Tc is estimated by identifying temperature where the correlation length (ξ) collapses (the "knee" in the plot).
+- This is more robust and physically meaningful than previous Binder cumulant methods (All UI and analysis now annotate Tc at the knee, matching physical expectations.)
 
 ---
 
