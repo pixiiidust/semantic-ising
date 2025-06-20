@@ -34,6 +34,8 @@ Do words meaning "dog" in 70+ languages share a common latent semantic structure
 2. What is the critical temperature where semantic phase transitions occur?
 3. How do anchor languages relate to emergent multilingual semantic structures?
 
+For a deeper dive and visualizing the concepts behind this simulator, see the [Scientific Background](#-scientific-background) section.
+
 ---
 
 ## ✨ Features
@@ -64,8 +66,6 @@ Do words meaning "dog" in 70+ languages share a common latent semantic structure
 
 ### Configuration Sidebar
 <img src="https://github.com/user-attachments/assets/930b3b43-a08d-4e61-adfd-711528d28f0e" width="40%"/>
-
-
 
 ---
 
@@ -217,6 +217,8 @@ For an intuitive visualization of spin alignments in an Ising model, see this ed
 <a href="https://youtube.com/clip/Ugkxw6ZqZOVHyjWC-d2qrbx4uUUIgc4SlXF1?" target="_blank">
  <img src="https://img.youtube.com/vi/wz_stb-EkYc/hqdefault.jpg" alt="Ising Model Spin Alignment Visualization" width="480" height="360" border="10" />
 </a>
+<br>
+<small><i>Source: <a href="https://www.youtube.com/@F_Sacco" target="_blank">@F_Sacco</a> / <a href="https://francesco215.github.io" target="_blank">francesco215.github.io</a></i></small>
 
 The simulator applies statistical physics concepts to semantic analysis:
 
@@ -238,6 +240,8 @@ The simulator applies statistical physics concepts to semantic analysis:
 - The simulator now detects the critical temperature (Tc) using the log(ξ) derivative method: Tc is identified as the temperature where the correlation length (ξ) collapses (the "knee" in the plot). This is more robust and physically meaningful than previous Binder cumulant methods.
 
 - All UI and analysis now annotate Tc at the knee, matching physical expectations.
+
+For a deeper dive and visualizing the concepts behind this simulator, see the [Scientific Background](#-scientific-background) section.
 
 ---
 
