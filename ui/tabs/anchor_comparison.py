@@ -34,11 +34,20 @@ def render_anchor_comparison_tab(comparison_metrics: Dict[str, float], experimen
         return
     
     try:
-        # Display main metrics concisely
-        col1, col2 = st.columns(2)
+        # Display Critical Temperature and main metrics in 3-column layout
+        col1, col2, col3 = st.columns(3)
+        
         with col1:
-            st.metric("Cosine Distance", f"{comparison_metrics['cosine_distance']:.4f}", help="Distance between anchor language vector and multilingual meta-vector at Tc (0-1, lower is better)")
+            if hasattr(st.session_state, 'critical_temperature') and st.session_state.critical_temperature:
+                tc = st.session_state.critical_temperature
+                st.metric("Critical Temperature", f"{tc:.3f}", help="Critical temperature, Tc, an estimate of where phase transition occurs")
+            else:
+                st.metric("Critical Temperature", "N/A", help="Critical temperature not available")
+        
         with col2:
+            st.metric("Cosine Distance", f"{comparison_metrics['cosine_distance']:.4f}", help="Distance between anchor language vector and multilingual meta-vector at Tc (0-1, lower is better)")
+        
+        with col3:
             st.metric("Cosine Similarity", f"{comparison_metrics['cosine_similarity']:.4f}", help="Similarity between anchor language vector and multilingual meta-vector at Tc (0-1, higher is better)")
         
         # Experiment configuration in expander
@@ -74,16 +83,49 @@ def render_anchor_comparison_tab(comparison_metrics: Dict[str, float], experimen
         # UMAP projection if available
         if hasattr(st.session_state, 'simulation_results') and hasattr(st.session_state, 'analysis_results'):
             st.subheader("🗺️ UMAP Projection")
+
+            simulation_results = st.session_state.simulation_results
+            analysis_results = st.session_state.analysis_results
+            vector_snapshots = simulation_results.get('vector_snapshots', {})
+            snapshot_dir = simulation_results.get('snapshot_directory')
+            available_snapshot_temps = simulation_results.get('available_snapshot_temperatures', [])
+            selected_temp = None
+
+            # Add slider if multiple snapshots are available
+            if (snapshot_dir and available_snapshot_temps and len(available_snapshot_temps) > 1) or (vector_snapshots and len(vector_snapshots) > 1):
+                if snapshot_dir and available_snapshot_temps:
+                    # Use disk-based snapshots
+                    snapshot_temps = available_snapshot_temps
+                else:
+                    # Use memory-based snapshots
+                    snapshot_temps = sorted(list(vector_snapshots.keys()))
+                
+                tc = analysis_results.get('critical_temperature')
+                
+                # Find the temperature in snapshots closest to Tc to be the default
+                default_temp = min(snapshot_temps, key=lambda t: abs(t - tc)) if tc else snapshot_temps[0]
+
+                selected_temp = st.slider(
+                    "Select Temperature for UMAP",
+                    min_value=min(snapshot_temps),
+                    max_value=max(snapshot_temps),
+                    value=default_temp,
+                    step=snapshot_temps[1] - snapshot_temps[0] if len(snapshot_temps) > 1 else 0.01,
+                    format="%.3f",
+                    help="Scrub through temperatures to see how semantic structure evolves. The plot dynamically updates."
+                )
+
             try:
                 # Extract anchor language information from experiment config
                 anchor_language = experiment_config.get('anchor_language') if experiment_config else None
                 include_anchor = experiment_config.get('include_anchor', False) if experiment_config else False
                 
                 fig = plot_full_umap_projection(
-                    st.session_state.simulation_results, 
-                    st.session_state.analysis_results,
+                    simulation_results, 
+                    analysis_results,
                     anchor_language=anchor_language,
-                    include_anchor=include_anchor
+                    include_anchor=include_anchor,
+                    selected_temperature=selected_temp
                 )
                 st.plotly_chart(fig, use_container_width=True, key="umap_projection_chart")
             except Exception as e:

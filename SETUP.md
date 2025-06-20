@@ -74,20 +74,24 @@ The complete and up-to-date project structure is maintained in [directory_struct
 1. **Simulation Engine** (`core/`):
    - Implements Metropolis-Hastings and Glauber dynamics
    - Manages temperature sweeps and convergence
-   - Detects phase transitions
+   - Detects phase transitions using log(ξ) derivative method
    - Computes meta vectors and correlations
+   - **Disk-based snapshot storage** for memory efficiency and large simulations
 
 2. **Analysis Pipeline** (`core/`):
    - Generates and caches LaBSE embeddings
    - Analyzes correlations and clustering
    - Computes comparison metrics
    - Performs post-simulation analysis
+   - **Language code preservation** in snapshots for proper visualization
 
 3. **User Interface** (`ui/`):
    - Real-time visualization of simulations
    - Interactive parameter configuration
    - Progress monitoring and logging
    - Results analysis and export
+   - **Interactive temperature slider** for dynamic UMAP exploration
+   - **Enhanced metrics display** with three-column layout
 
 ## 🔧 Implementation Details
 
@@ -154,6 +158,13 @@ The complete and up-to-date project structure is maintained in [directory_struct
    - Naming: `{concept}_{timestamp}.npy`
    - Auto-generated and cached
 
+3. **Simulation Snapshots** (`data/snapshots/`):
+   - Format: Pickle files (.pkl) containing numpy arrays and metadata
+   - Naming: `snapshot_T{temperature}.pkl` for temperature-based indexing
+   - Content: Vector snapshots, language codes, and simulation metadata
+   - **Hash-based directory naming** for unique simulation configurations
+   - **Automatic snapshot indexing** for efficient temperature-based retrieval
+
 ### Dependencies
 Core requirements (see `requirements.txt`):
 ```
@@ -166,6 +177,25 @@ numpy>=1.23.5               # Numerical computation
 scipy>=1.10.0               # Scientific computing
 pyyaml>=6.0                 # Configuration
 ```
+
+## 🆕 Latest Features
+
+### Interactive UMAP Visualization
+- **Temperature slider integration**: Dynamic exploration of semantic structure across temperature steps
+- **Disk-based snapshot loading**: Efficient loading of vector snapshots from disk based on temperature selection
+- **UMAP zoom control**: Auto-scaling with 2.0× zoom factor for better visualization of language clusters
+- **Language code preservation**: Fixed UMAP labels to show actual language codes (en, es, fr, etc.) instead of generic labels
+
+### Enhanced Metrics Display
+- **Three-column layout**: Critical Temperature, Cosine Distance, and Cosine Similarity displayed consistently
+- **Pre-calculated metrics**: All temperature metrics calculated after simulation to avoid real-time computation
+- **Improved Tc display**: Critical temperature prominently shown with enhanced help text
+- **Debug output cleanup**: Removed debug messages for cleaner user experience
+
+### Performance Optimizations
+- **Memory efficiency**: Temperature-based snapshot loading reduces memory usage for large simulations
+- **Real-time responsiveness**: Pre-calculated metrics enable smooth temperature slider interaction
+- **Efficient data retrieval**: Hash-based snapshot directory naming for unique simulation configurations
 
 ## 🔬 Running Experiments
 
@@ -220,9 +250,9 @@ pyyaml>=6.0                 # Configuration
    - Performance metrics
 
 ### Visualization
-- Interactive UMAP projections
+- Interactive UMAP projections with temperature slider
 - Temperature sweep plots
 - Correlation decay curves
 - Convergence diagnostics
 
-For detailed implementation references, see inline documentation in respective modules. 
+For detailed implementation references, see inline documentation in respective modules.

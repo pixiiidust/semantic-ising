@@ -134,16 +134,21 @@ def main():
             anchor_language, include_anchor = render_anchor_config()
             
             # Temperature range configuration
-            st.subheader("🌡️ Temperature Range")
-            
-            # Show config source info
-            st.info(f"📋 Defaults from config: {config_defaults['temp_min']:.1f}-{config_defaults['temp_max']:.1f}, {config_defaults['temp_steps']} steps")
+            st.subheader("🌡️ Temperature Range",
+            help="📋 Defaults from config/defaults.yaml")
             
             # Auto-estimate checkbox
             use_auto_estimate = st.checkbox(
                 "Auto-estimate temperature range (recommended)",
                 value=True,
                 help="Automatically estimate optimal temperature range based on vector properties"
+            )
+
+            # Checkbox for storing all temperature steps
+            store_all_steps = st.checkbox(
+                "Store all steps for dynamic visualization",
+                value=False,
+                help="Saves the state at every temperature step. Required for the interactive UMAP slider, but uses more memory."
             )
             
             if use_auto_estimate:
@@ -228,7 +233,7 @@ def main():
                     # Create mock data for testing
                     create_mock_simulation_results(concept, encoder, T_range, anchor_language, include_anchor, concept_info)
                 else:
-                    run_simulation_workflow(concept, encoder, T_range, anchor_language, include_anchor, concept_info)
+                    run_simulation_workflow(concept, encoder, T_range, anchor_language, include_anchor, concept_info, store_all_steps, n_steps)
         
         # Main content area
         tab1, tab2, tab3 = st.tabs([
@@ -292,7 +297,9 @@ def run_simulation_workflow(concept: str,
                            T_range: List[float], 
                            anchor_language: str, 
                            include_anchor: bool,
-                           concept_info: Dict[str, Any]) -> None:
+                           concept_info: Dict[str, Any],
+                           store_all_steps: bool,
+                           n_steps: int) -> None:
     """
     Run the complete simulation workflow with progress tracking.
     
@@ -303,6 +310,8 @@ def run_simulation_workflow(concept: str,
         anchor_language: Selected anchor language
         include_anchor: Whether anchor is included in dynamics
         concept_info: Additional information about the concept
+        store_all_steps: Whether to store all temperature steps
+        n_steps: Number of temperature steps
     """
     try:
         # Import simulation functions
@@ -366,6 +375,17 @@ def run_simulation_workflow(concept: str,
         status_text.text("⚙️ Running temperature sweep...")
         progress_bar.progress(0.4)
         
+        # Configure max_snapshots based on user selection
+        max_snapshots = n_steps if store_all_steps else 10
+        st.info(f"Storing up to {max_snapshots} vector snapshots.")
+        
+        # Create snapshot directory for disk-based storage
+        snapshot_dir = None
+        if store_all_steps:
+            from core.simulation import _get_snapshot_directory
+            snapshot_dir = _get_snapshot_directory(concept, encoder, anchor_language, include_anchor)
+            st.info(f"Snapshots will be saved to: {snapshot_dir}")
+        
         # Record start time for elapsed time tracking
         simulation_start_time = time.time()
         
@@ -406,10 +426,17 @@ def run_simulation_workflow(concept: str,
         simulation_results = run_temperature_sweep(
             dynamics_embeddings, 
             T_range,
-            store_all_temperatures=True,
+            store_all_temperatures=store_all_steps,
+            max_snapshots=max_snapshots,
             n_sweeps_per_temperature=10,  # Use reasonable number of sweeps
             sim_params=sim_params,
-            progress_callback=update_progress
+            progress_callback=update_progress,
+            snapshot_dir=snapshot_dir,
+            concept=concept,
+            encoder=encoder,
+            anchor_language=anchor_language,
+            include_anchor=include_anchor,
+            languages=dynamics_languages
         )
         
         # Update status to show simulation completed
@@ -439,8 +466,6 @@ def run_simulation_workflow(concept: str,
         # Detect critical temperature
         tc = find_critical_temperature(simulation_results)
 
-        # Step 5.5: Rerun at Tc for entropy evolution logging
-        st.info(f"🔁 Rerunning simulation at Tc = {tc:.3f} to log entropy evolution...")
         # Map config keys to simulate_at_temperature args
         sim_kwargs = {}
         if 'max_iterations' in sim_params:

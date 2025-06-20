@@ -66,13 +66,16 @@ The core modules implement the scientific foundation of the Semantic Ising Simul
 - Integration with simulation workflow
 
 ### 🔥 `simulation.py`
-**Purpose**: Core Ising model simulation engine
+**Purpose**: Core Ising model simulation engine with disk-based snapshot storage
 
 **Key Functions**:
-- `run_temperature_sweep(vectors, T_range, store_all_temperatures=False)` - Main simulation driver
+- `run_temperature_sweep(vectors, T_range, store_all_temperatures=False, languages=None)` - Main simulation driver with language support
 - `simulate_at_temperature(vectors, T)` - Single temperature simulation
 - `update_vectors_ising(vectors, T, method)` - Ising update rules
 - `collect_metrics(vectors, T)` - Comprehensive metric collection
+- `_save_snapshot_to_disk(snapshot_dir, temperature, vectors, languages, metadata)` - Disk-based snapshot storage
+- `_load_snapshot_from_disk(snapshot_dir, temperature)` - Load snapshots from disk
+- `_get_available_snapshot_temperatures(snapshot_dir)` - Get available snapshot temperatures
 
 **Update Methods**:
 - **Metropolis**: Standard Metropolis-Hastings acceptance criterion
@@ -80,10 +83,14 @@ The core modules implement the scientific foundation of the Semantic Ising Simul
 
 **Features**:
 - Multi-replica support for statistical averaging
+- **Disk-based snapshot storage** for memory efficiency and persistence
+- **Language code preservation** in snapshots for proper UMAP labeling
 - Memory management with configurable snapshot storage
 - Convergence detection and error handling
 - Comprehensive metric collection
 - Temperature-dependent clustering thresholds (0.8-0.95 range)
+- **Snapshot directory management** with unique hash-based naming
+- **Automatic snapshot indexing** for efficient temperature-based retrieval
 
 ### 📊 `dynamics.py`
 **Purpose**: Correlation analysis and dynamic properties
@@ -296,3 +303,24 @@ pytest tests/test_*.py -v
 - Improved synchronization between backend Tc detection and UI display: the critical temperature (Tc) value is now always consistent between backend logic and user interface charts.
 - Removed all debug output from core modules for a cleaner user experience.
 - The convergence summary chart now only displays the vertical Tc line (critical temperature), with the convergence threshold line removed for clarity.
+
+### Simulation Engine Enhancements
+- **Disk-based snapshot storage**: Added `_save_snapshot_to_disk()` and `_load_snapshot_from_disk()` functions for persistent vector storage
+- **Language parameter support**: `run_temperature_sweep()` now accepts `languages` parameter to preserve actual language codes in snapshots
+- **Snapshot directory management**: Unique hash-based directory naming for different simulation configurations
+- **Automatic snapshot indexing**: Efficient temperature-based snapshot retrieval system
+- **Memory optimization**: Snapshots stored on disk instead of memory for large simulations
+
+### Language Labeling Fix
+- **Fixed UMAP language display**: Snapshots now preserve actual language codes (en, es, fr, etc.) instead of generic labels (Lang_0, Lang_1, etc.)
+- **Proper language parameter passing**: Language codes are now correctly passed from app.py through simulation.py to snapshot storage
+
+### Temperature Estimation Improvements
+- **Conservative energy scaling**: Uses 2.0× multiplier for energy fluctuation estimates
+- **Configurable max temperature**: Respects user settings from configuration files
+- **Enhanced auto-estimation**: More robust temperature range detection
+
+### UI Synchronization
+- **Critical temperature consistency**: Tc values are now consistent between backend detection and UI display
+- **Debug output cleanup**: Removed debug messages from core modules for cleaner user experience
+- **Convergence summary enhancement**: Simplified Tc line display for better clarity

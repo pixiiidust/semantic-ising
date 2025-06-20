@@ -224,8 +224,11 @@ def interpolate_vectors_at_temperature(vector_snapshots: Dict[float, np.ndarray]
     return None
 
 
-def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_results: Dict[str, Any], 
-                             anchor_language: str = None, include_anchor: bool = False) -> go.Figure:
+def plot_full_umap_projection(simulation_results: Dict[str, Any], 
+                               analysis_results: Dict[str, Any], 
+                               anchor_language: Optional[str] = None, 
+                               include_anchor: bool = False,
+                               selected_temperature: Optional[float] = None) -> go.Figure:
     """
     Plot full UMAP projection of vectors at Tc (or closest available snapshot).
     If no snapshots, fallback to dynamics_vectors.
@@ -234,36 +237,72 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
     try:
         tc = analysis_results.get('critical_temperature')
         vector_snapshots = simulation_results.get('vector_snapshots', {})
+        snapshot_dir = simulation_results.get('snapshot_directory')
+        available_snapshot_temps = simulation_results.get('available_snapshot_temperatures', [])
         languages = simulation_results.get('languages', [f'Lang_{i}' for i in range(len(simulation_results.get('dynamics_vectors', [])))])
+        
+        # Debug logging
+        logger.info(f"Initial languages from simulation_results: {languages}")
+        logger.info(f"Snapshot directory: {snapshot_dir}")
+        logger.info(f"Available snapshot temps: {available_snapshot_temps}")
+        
+        target_temp = selected_temperature if selected_temperature is not None else tc
         
         tc_vectors = None
         used_temp = None
-        fallback = False
         interpolation_used = False
         
-        # Try to get vectors at exactly Tc using interpolation
-        if vector_snapshots and len(vector_snapshots) >= 2:
-            tc_vectors = interpolate_vectors_at_temperature(vector_snapshots, tc)
-            if tc_vectors is not None:
-                used_temp = tc
-                interpolation_used = True
-        
-        # If interpolation failed, try closest snapshot
-        if tc_vectors is None and vector_snapshots:
-            available_temps = list(vector_snapshots.keys())
-            if len(available_temps) > 0:
-                closest_temp = min(available_temps, key=lambda t: abs(t - tc))
-                tc_vectors = vector_snapshots[closest_temp]
-                used_temp = closest_temp
-        
-        # Fallback to dynamics_vectors if no snapshots
+        # If a specific temperature is selected, find the closest snapshot
+        if selected_temperature is not None:
+            if snapshot_dir and available_snapshot_temps:
+                # Load from disk
+                from core.simulation import _load_snapshot_from_disk
+                snapshot_data = _load_snapshot_from_disk(snapshot_dir, selected_temperature)
+                if snapshot_data:
+                    tc_vectors = snapshot_data['vectors']
+                    used_temp = snapshot_data['temperature']
+                    languages = snapshot_data['languages']
+                    logger.info(f"Loaded languages from snapshot at T={selected_temperature}: {languages}")
+                    interpolation_used = True
+            elif vector_snapshots:
+                # Fallback to memory-based snapshots
+                available_temps = list(vector_snapshots.keys())
+                if available_temps:
+                    closest_temp = min(available_temps, key=lambda t: abs(t - selected_temperature))
+                    tc_vectors = vector_snapshots[closest_temp]
+                    used_temp = closest_temp
+        # If no temperature is selected, use the original logic (interpolation/closest to Tc)
+        elif tc is not None:
+            if snapshot_dir and available_snapshot_temps:
+                # Load from disk
+                from core.simulation import _load_snapshot_from_disk
+                snapshot_data = _load_snapshot_from_disk(snapshot_dir, tc)
+                if snapshot_data:
+                    tc_vectors = snapshot_data['vectors']
+                    used_temp = snapshot_data['temperature']
+                    languages = snapshot_data['languages']
+                    logger.info(f"Loaded languages from snapshot at T={tc}: {languages}")
+                    interpolation_used = True
+            elif vector_snapshots and len(vector_snapshots) >= 2:
+                tc_vectors = interpolate_vectors_at_temperature(vector_snapshots, tc)
+                if tc_vectors is not None:
+                    used_temp = tc
+                    interpolation_used = True
+            
+            if tc_vectors is None and vector_snapshots:
+                available_temps = list(vector_snapshots.keys())
+                if available_temps:
+                    closest_temp = min(available_temps, key=lambda t: abs(t - tc))
+                    tc_vectors = vector_snapshots[closest_temp]
+                    used_temp = closest_temp
+
+        # Fallback to initial embeddings if no other vectors are found
         if tc_vectors is None:
             tc_vectors = simulation_results.get('dynamics_vectors', None)
-            used_temp = tc
-            fallback = True
+            used_temp = target_temp # Can be Tc or selected temp
             
         if tc_vectors is None:
-            # Nothing to plot
+            st.warning("No vectors available to generate UMAP plot.")
             return go.Figure()
         
         # Compute meta-vector from multilingual set
@@ -354,6 +393,10 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
             warning_msg = None
             logger.info(f"Using {len(languages)} language codes for {len(language_coords)} vectors")
         
+        # Final debug logging
+        logger.info(f"Final languages for plotting: {languages}")
+        logger.info(f"Number of language coordinates: {len(language_coords)}")
+        
         # Prepare hover texts with language code and name
         hover_texts = [
             f"{code} = {LANGUAGE_NAMES.get(code, 'Unknown')}" for code in languages
@@ -429,12 +472,12 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
             logger.info(f"No anchor coordinates available for {anchor_language} (include_anchor={include_anchor})")
         
         # Update layout with appropriate title
-        if interpolation_used:
-            title = f"UMAP Projection at T = {used_temp:.3f} (interpolated)"
-        elif fallback:
-            title = f"UMAP Projection at T = {used_temp:.3f} (original vectors, no snapshots)"
+        if selected_temperature is not None:
+            title = f"UMAP Projection at T = {used_temp:.3f} (selected)"
+        elif interpolation_used:
+            title = f"UMAP Projection at T = {used_temp:.3f} (interpolated at Tc)"
         else:
-            title = f"UMAP Projection at T = {used_temp:.3f} (closest snapshot)"
+            title = f"UMAP Projection at T = {used_temp:.3f} (closest to Tc)"
         
         # Add anchor language info to title
         if anchor_language:
@@ -445,6 +488,39 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
         if warning_msg:
             title += f"<br>{warning_msg}"
         
+        # Calculate auto-scaled range and zoom out by 3 steps
+        all_coords = []
+        if len(language_coords) > 0:
+            all_coords.extend(language_coords)
+        if meta_coords is not None:
+            all_coords.append(meta_coords)
+        if anchor_coords is not None:
+            all_coords.append(anchor_coords)
+        
+        if all_coords:
+            all_coords = np.array(all_coords)
+            x_min, x_max = all_coords[:, 0].min(), all_coords[:, 0].max()
+            y_min, y_max = all_coords[:, 1].min(), all_coords[:, 1].max()
+            
+            # Calculate center and range
+            x_center = (x_min + x_max) / 2
+            y_center = (y_min + y_max) / 2
+            x_range = x_max - x_min
+            y_range = y_max - y_min
+            
+            # Zoom out by expanding range by 100% (3 zoom-out steps)
+            zoom_factor = 2.0
+            x_range_expanded = x_range * zoom_factor
+            y_range_expanded = y_range * zoom_factor
+            
+            # Set expanded ranges
+            x_range_final = [x_center - x_range_expanded/2, x_center + x_range_expanded/2]
+            y_range_final = [y_center - y_range_expanded/2, y_center + y_range_expanded/2]
+        else:
+            # Fallback to default range if no coordinates
+            x_range_final = [-1.2, 1.2]
+            y_range_final = [-1.2, 1.2]
+        
         fig.update_layout(
             title=title,
             xaxis_title="UMAP 1",
@@ -454,7 +530,9 @@ def plot_full_umap_projection(simulation_results: Dict[str, Any], analysis_resul
             hovermode='closest',
             height=600,  # Make chart taller
             width=800,   # Set reasonable width
-            margin=dict(l=50, r=50, t=80, b=50)  # Adjust margins for better proportions
+            margin=dict(l=50, r=50, t=80, b=50),  # Adjust margins for better proportions
+            xaxis=dict(range=x_range_final),  # Auto-scaled then zoomed out
+            yaxis=dict(range=y_range_final)   # Auto-scaled then zoomed out
         )
         
         return fig

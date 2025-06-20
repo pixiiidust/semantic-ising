@@ -44,11 +44,11 @@ The UI modules provide an interactive web interface for the Semantic Ising Simul
 - Export functionality integration
 
 ### 📊 `charts.py`
-**Purpose**: Interactive chart generation using Plotly
+**Purpose**: Interactive chart generation using Plotly with enhanced UMAP visualization
 
 **Key Functions**:
 - `plot_entropy_vs_temperature(simulation_results)` - Entropy vs temperature plot
-- `plot_full_umap_projection(simulation_results, analysis_results, anchor_language=None)` - UMAP projection
+- `plot_full_umap_projection(simulation_results, analysis_results, anchor_language=None, zoom_factor=2.0)` - UMAP projection with zoom control
 - `plot_correlation_decay(analysis_results)` - Correlation decay plot
 - `plot_correlation_length_vs_temperature(simulation_results)` - Correlation length vs temperature
 - `plot_alignment_vs_temperature(simulation_results)` - Alignment vs temperature
@@ -58,6 +58,9 @@ The UI modules provide an interactive web interface for the Semantic Ising Simul
 - Interactive Plotly charts with hover information
 - Critical temperature markers
 - Anchor language highlighting in UMAP
+- **UMAP zoom control**: Auto-scaling with configurable zoom factor (default 2.0× zoom out)
+- **Temperature slider integration**: Dynamic UMAP updates based on temperature selection
+- **Language code preservation**: Proper language labels (en, es, fr, etc.) in UMAP plots
 - Configurable styling and themes
 - Export functionality
 
@@ -93,17 +96,22 @@ The UI modules provide an interactive web interface for the Semantic Ising Simul
 - Export functionality integration
 
 ### 🔗 `tabs/anchor_comparison.py`
-**Purpose**: Anchor language comparison analysis
+**Purpose**: Anchor language comparison analysis with interactive temperature exploration
 
 **Key Functions**:
 - `render_anchor_comparison_tab()` - Anchor comparison interface
 
 **Features**:
-- UMAP visualization with anchor highlighting
-- Comprehensive comparison metrics display
-- Automatic interpretation and scoring
-- Interactive chart exploration
-- Export functionality
+- **Interactive UMAP visualization** with temperature slider for dynamic exploration
+- **Temperature-based vector loading** from disk snapshots for efficient memory usage
+- **Comprehensive comparison metrics display** in three-column layout:
+  - Critical Temperature (Tc) prominently displayed
+  - Cosine Distance (primary semantic metric)
+  - Cosine Similarity (directional similarity)
+- **Automatic interpretation and scoring** of anchor alignment
+- **Pre-calculated metrics** for all temperatures to avoid real-time computation
+- **Language code preservation** in UMAP plots (en, es, fr, etc.)
+- **Export functionality** for results and visualizations
 
 ### 📋 `tabs/tabs.md`
 **Purpose**: Tab structure documentation
@@ -186,3 +194,22 @@ with tab2:
 with tab3:
     render_anchor_comparison_tab()
 ```
+
+## 📝 Recent Updates
+
+### Interactive UMAP Visualization
+- **Temperature slider integration**: Added interactive temperature slider for dynamic UMAP exploration
+- **Disk-based snapshot loading**: Efficient loading of vector snapshots from disk based on temperature selection
+- **UMAP zoom control**: Auto-scaling with 2.0× zoom factor for better visualization of language clusters
+- **Language code preservation**: Fixed UMAP labels to show actual language codes (en, es, fr, etc.) instead of generic labels
+
+### Enhanced Metrics Display
+- **Three-column layout**: Critical Temperature, Cosine Distance, and Cosine Similarity displayed consistently
+- **Pre-calculated metrics**: All temperature metrics calculated after simulation to avoid real-time computation
+- **Improved Tc display**: Critical temperature prominently shown with enhanced help text
+- **Debug output cleanup**: Removed debug messages for cleaner user experience
+
+### Performance Optimizations
+- **Memory efficiency**: Temperature-based snapshot loading reduces memory usage for large simulations
+- **Real-time responsiveness**: Pre-calculated metrics enable smooth temperature slider interaction
+- **Efficient data retrieval**: Hash-based snapshot directory naming for unique simulation configurations

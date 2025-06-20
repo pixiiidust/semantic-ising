@@ -11,9 +11,153 @@ from typing import Dict, List, Tuple, Any
 from core.physics import total_system_energy
 from scipy.optimize import curve_fit
 from core.clustering import cluster_vectors
+import os
+import hashlib
+import pickle
 
 # Initialize logger
 logger = logging.getLogger(__name__)
+
+
+def _get_snapshot_directory(concept: str, encoder: str, anchor_language: str, include_anchor: bool) -> str:
+    """
+    Generate a unique snapshot directory path based on simulation parameters.
+    
+    Args:
+        concept: The concept being simulated
+        encoder: The embedding model used
+        anchor_language: The anchor language
+        include_anchor: Whether anchor is included in dynamics
+        
+    Returns:
+        Path to the snapshot directory
+    """
+    # Create a hash of the simulation parameters for uniqueness
+    params_str = f"{concept}_{encoder}_{anchor_language}_{include_anchor}"
+    params_hash = hashlib.md5(params_str.encode()).hexdigest()[:8]
+    
+    # Create snapshot directory
+    snapshot_dir = os.path.join("data", "snapshots", f"{concept}_{params_hash}")
+    os.makedirs(snapshot_dir, exist_ok=True)
+    
+    return snapshot_dir
+
+
+def _save_snapshot_to_disk(snapshot_dir: str, temperature: float, vectors: np.ndarray, 
+                          languages: List[str], metadata: Dict[str, Any]) -> None:
+    """
+    Save a vector snapshot to disk.
+    
+    Args:
+        snapshot_dir: Directory to save the snapshot
+        temperature: Temperature of the snapshot
+        vectors: Vector data to save
+        languages: List of language codes
+        metadata: Additional metadata to save
+    """
+    try:
+        # Create filename with temperature
+        filename = f"snapshot_T{temperature:.6f}.pkl"
+        filepath = os.path.join(snapshot_dir, filename)
+        
+        # Prepare data for saving
+        snapshot_data = {
+            'temperature': temperature,
+            'vectors': vectors,
+            'languages': languages,
+            'metadata': metadata
+        }
+        
+        # Save to disk
+        with open(filepath, 'wb') as f:
+            pickle.dump(snapshot_data, f)
+        
+        logger.info(f"Saved snapshot to {filepath}")
+        
+    except Exception as e:
+        logger.error(f"Failed to save snapshot at T={temperature}: {e}")
+
+
+def _load_snapshot_from_disk(snapshot_dir: str, temperature: float) -> Dict[str, Any]:
+    """
+    Load a vector snapshot from disk.
+    
+    Args:
+        snapshot_dir: Directory containing snapshots
+        temperature: Temperature to load
+        
+    Returns:
+        Dictionary containing snapshot data or None if not found
+    """
+    try:
+        # Find the closest snapshot file
+        if not os.path.exists(snapshot_dir):
+            return None
+            
+        snapshot_files = [f for f in os.listdir(snapshot_dir) if f.startswith("snapshot_T") and f.endswith(".pkl")]
+        
+        if not snapshot_files:
+            return None
+        
+        # Extract temperatures from filenames
+        available_temps = []
+        for filename in snapshot_files:
+            try:
+                temp_str = filename.replace("snapshot_T", "").replace(".pkl", "")
+                temp = float(temp_str)
+                available_temps.append((temp, filename))
+            except ValueError:
+                continue
+        
+        if not available_temps:
+            return None
+        
+        # Find closest temperature
+        closest_temp, closest_filename = min(available_temps, key=lambda x: abs(x[0] - temperature))
+        
+        # Load the snapshot
+        filepath = os.path.join(snapshot_dir, closest_filename)
+        with open(filepath, 'rb') as f:
+            snapshot_data = pickle.load(f)
+        
+        logger.info(f"Loaded snapshot from {filepath} (requested T={temperature:.3f}, found T={closest_temp:.3f})")
+        return snapshot_data
+        
+    except Exception as e:
+        logger.error(f"Failed to load snapshot at T={temperature}: {e}")
+        return None
+
+
+def _get_available_snapshot_temperatures(snapshot_dir: str) -> List[float]:
+    """
+    Get list of available snapshot temperatures from disk.
+    
+    Args:
+        snapshot_dir: Directory containing snapshots
+        
+    Returns:
+        List of available temperatures
+    """
+    try:
+        if not os.path.exists(snapshot_dir):
+            return []
+            
+        snapshot_files = [f for f in os.listdir(snapshot_dir) if f.startswith("snapshot_T") and f.endswith(".pkl")]
+        
+        available_temps = []
+        for filename in snapshot_files:
+            try:
+                temp_str = filename.replace("snapshot_T", "").replace(".pkl", "")
+                temp = float(temp_str)
+                available_temps.append(temp)
+            except ValueError:
+                continue
+        
+        return sorted(available_temps)
+        
+    except Exception as e:
+        logger.error(f"Failed to get available snapshot temperatures: {e}")
+        return []
 
 
 def _ensure_float(value: Any, name: str, default: float = None) -> float:
@@ -49,7 +193,13 @@ def run_temperature_sweep(
     n_replicas: int = 1,
     n_sweeps_per_temperature: int = 10,
     sim_params: Dict[str, Any] = None,
-    progress_callback: callable = None
+    progress_callback: callable = None,
+    snapshot_dir: str = None,
+    concept: str = None,
+    encoder: str = None,
+    anchor_language: str = None,
+    include_anchor: bool = None,
+    languages: List[str] = None
 ) -> Dict[str, np.ndarray]:
     """
     Run temperature sweep with multi-replica support and memory management.
@@ -68,6 +218,12 @@ def run_temperature_sweep(
         n_sweeps_per_temperature: Number of sweeps per temperature for ensemble statistics
         sim_params: Dictionary of simulation parameters from config
         progress_callback: Callback function for real-time progress reporting
+        snapshot_dir: Directory to save snapshots
+        concept: The concept being simulated
+        encoder: The embedding model used
+        anchor_language: The anchor language
+        include_anchor: Whether anchor is included in dynamics
+        languages: List of language codes
         
     Returns:
         Dictionary containing temperature-dependent metrics and optional vector snapshots
@@ -109,7 +265,8 @@ def run_temperature_sweep(
             np.random.seed(42 + replica)
             replica_metrics = _run_single_temperature_sweep(
                 vectors, T_range, store_all_temperatures, max_snapshots, 
-                n_sweeps_per_temperature, sim_params, progress_callback
+                n_sweeps_per_temperature, sim_params, progress_callback,
+                snapshot_dir, concept, encoder, anchor_language, include_anchor, languages
             )
             all_metrics.append(replica_metrics)
         
@@ -119,7 +276,8 @@ def run_temperature_sweep(
         # Single replica
         return _run_single_temperature_sweep(
             vectors, T_range, store_all_temperatures, max_snapshots, 
-            n_sweeps_per_temperature, sim_params, progress_callback
+            n_sweeps_per_temperature, sim_params, progress_callback,
+            snapshot_dir, concept, encoder, anchor_language, include_anchor, languages
         )
 
 
@@ -130,7 +288,13 @@ def _run_single_temperature_sweep(
     max_snapshots: int,
     n_sweeps_per_temperature: int,
     sim_params: Dict[str, Any] = None,
-    progress_callback: callable = None
+    progress_callback: callable = None,
+    snapshot_dir: str = None,
+    concept: str = None,
+    encoder: str = None,
+    anchor_language: str = None,
+    include_anchor: bool = None,
+    languages: List[str] = None
 ) -> Dict[str, np.ndarray]:
     """Run single temperature sweep (internal function)"""
     # Initialize lists to store ALL results (including diverging ones)
@@ -148,10 +312,17 @@ def _run_single_temperature_sweep(
     
     vector_snapshots = {} if store_all_temperatures else None
     
+    # Create default language labels based on vector count
+    languages = languages or [f'Lang_{i}' for i in range(len(vectors))]
+    
     # Memory management: store only selected temperatures
+    snapshot_indices = []  # Initialize empty list
     if store_all_temperatures:
         # Store snapshots at regular intervals or key temperatures
         snapshot_indices = np.linspace(0, len(T_range)-1, min(max_snapshots, len(T_range)), dtype=int)
+        print(f"[DEBUG] store_all_temperatures={store_all_temperatures}, max_snapshots={max_snapshots}")
+        print(f"[DEBUG] snapshot_indices={snapshot_indices}")
+        print(f"[DEBUG] snapshot_dir={snapshot_dir}")
     
     # Extract simulation parameters with defaults
     if sim_params is None:
@@ -241,9 +412,36 @@ def _run_single_temperature_sweep(
                 'iterations': convergence_infos[-1]['iterations']
             })
             
-            # Store vectors only at selected temperatures (if converged)
-            if store_all_temperatures and i in snapshot_indices and final_status == 'converged':
-                vector_snapshots[T] = current_vectors.copy()
+            # Store vectors only at selected temperatures (if converged or plateau)
+            if store_all_temperatures and i in snapshot_indices and final_status in ['converged', 'plateau']:
+                try:
+                    # Ensure vectors are properly shaped numpy arrays
+                    snapshot_vectors = np.array(current_vectors, dtype=np.float32)
+                    
+                    if snapshot_dir:
+                        # Save to disk
+                        metadata = {
+                            'concept': concept,
+                            'encoder': encoder,
+                            'anchor_language': anchor_language,
+                            'include_anchor': include_anchor,
+                            'final_status': final_status,
+                            'temperature': T
+                        }
+                        _save_snapshot_to_disk(snapshot_dir, T, snapshot_vectors, languages, metadata)
+                        print(f"[DEBUG] Saved snapshot to disk at T={T:.3f}, status={final_status}, index={i}")
+                    else:
+                        # Fallback to memory storage
+                        if 'vector_snapshots' not in locals():
+                            vector_snapshots = {}
+                        vector_snapshots[T] = snapshot_vectors
+                        print(f"[DEBUG] Stored snapshot in memory at T={T:.3f}, status={final_status}, index={i}")
+                except Exception as e:
+                    print(f"[DEBUG] Failed to save snapshot at T={T:.3f}: {e}")
+            elif store_all_temperatures and i in snapshot_indices:
+                print(f"[DEBUG] Skipped snapshot at T={T:.3f}, status={final_status}, index={i}")
+            elif store_all_temperatures:
+                print(f"[DEBUG] Index {i} not in snapshot_indices {snapshot_indices}")
             
             # (after all Ising updates and before memory cleanup)
             # Cluster the vectors at this temperature (use final current_vectors)
@@ -296,7 +494,13 @@ def _run_single_temperature_sweep(
     }
     
     if store_all_temperatures:
-        result['vector_snapshots'] = vector_snapshots
+        if snapshot_dir:
+            # Store snapshot directory info for disk-based access
+            result['snapshot_directory'] = snapshot_dir
+            result['available_snapshot_temperatures'] = _get_available_snapshot_temperatures(snapshot_dir)
+        else:
+            # Fallback to memory storage
+            result['vector_snapshots'] = vector_snapshots
     
     # Report final progress
     if progress_callback is not None:

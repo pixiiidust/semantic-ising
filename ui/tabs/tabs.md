@@ -80,25 +80,32 @@ ui/tabs/
 - **Export Options**: CSV, vectors, charts, configuration
 
 ### 🔗 `anchor_comparison.py`
-**Purpose**: Anchor language comparison analysis
+**Purpose**: Anchor language comparison analysis with interactive temperature exploration
 
 **Key Functions**:
 - `render_anchor_comparison_tab()` - Anchor comparison interface
 
 **Features**:
-- UMAP visualization with anchor highlighting
-- Comprehensive comparison metrics display
-- Automatic interpretation and scoring
-- Interactive chart exploration
-- Export functionality
+- **Interactive UMAP visualization** with temperature slider for dynamic exploration
+- **Temperature-based vector loading** from disk snapshots for efficient memory usage
+- **Comprehensive comparison metrics display** in three-column layout:
+  - Critical Temperature (Tc) prominently displayed
+  - Cosine Distance (primary semantic metric)
+  - Cosine Similarity (directional similarity)
+- **Automatic interpretation and scoring** of anchor alignment
+- **Pre-calculated metrics** for all temperatures to avoid real-time computation
+- **Language code preservation** in UMAP plots (en, es, fr, etc.)
+- **Export functionality** for results and visualizations
 
 **Visualization Components**:
-- **UMAP Projection**: 2D visualization of vectors at critical temperature
+- **UMAP Projection**: 2D visualization of vectors with temperature slider control
 - **Anchor Highlighting**: Red star markers for anchor languages
 - **Hover Information**: Language codes and distances
-- **Interactive Controls**: Zoom, pan, and selection
+- **Interactive Controls**: Zoom, pan, temperature selection, and language filtering
+- **Temperature Slider**: Dynamic exploration of semantic structure across temperature steps
 
 **Comparison Metrics**:
+- **Critical Temperature (Tc)**: Prominently displayed with enhanced help text
 - **Cosine Distance**: Primary semantic distance metric (0-1, lower is better)
 - **Cosine Similarity**: Directional similarity (0-1, higher is better)
 
@@ -260,4 +267,28 @@ pytest tests/test_ui_integration.py -v
 - **Streamlit**: Web application framework
 - **Plotly**: Interactive visualization library
 - **UMAP**: Dimensionality reduction algorithm
-- **Material Design**: UI/UX design principles 
+- **Material Design**: UI/UX design principles
+
+## 📝 Recent Updates
+
+### Interactive Temperature Exploration
+- **Temperature slider integration**: Added interactive slider in anchor comparison tab for dynamic UMAP exploration
+- **Disk-based snapshot loading**: Efficient loading of vector snapshots from disk based on temperature selection
+- **Real-time UMAP updates**: Dynamic visualization updates as temperature slider moves
+- **Memory optimization**: Temperature-based loading reduces memory usage for large simulations
+
+### Enhanced Metrics Display
+- **Three-column layout**: Critical Temperature, Cosine Distance, and Cosine Similarity displayed consistently
+- **Improved Tc display**: Critical temperature prominently shown with enhanced help text
+- **Pre-calculated metrics**: All temperature metrics calculated after simulation to avoid real-time computation
+- **Debug output cleanup**: Removed debug messages for cleaner user experience
+
+### Language Labeling Improvements
+- **Fixed UMAP language display**: Language labels now show actual language codes (en, es, fr, etc.) instead of generic labels
+- **Proper parameter passing**: Language codes correctly passed from concept files through simulation to UI
+- **Consistent labeling**: All visualization components use consistent language codes
+
+### Performance Enhancements
+- **Efficient data retrieval**: Hash-based snapshot directory naming for unique simulation configurations
+- **Smooth interaction**: Pre-calculated metrics enable responsive temperature slider interaction
+- **Optimized memory usage**: Temperature-based snapshot loading instead of loading all snapshots at once 

@@ -34,6 +34,32 @@ For the complete and up-to-date project structure, including the data directory 
 - Organized by concept and encoder
 - Documentation in embeddings.md
 
+### Snapshots Directory (`snapshots/`)
+- **Simulation vector snapshots** stored at each temperature step
+- **Hash-based directory naming** for unique simulation configurations
+- **Temperature-indexed files** for efficient retrieval
+- **Language code preservation** for proper UMAP visualization
+- **Metadata storage** including simulation parameters and timestamps
+
+#### Snapshot Directory Structure
+```
+snapshots/
+├── {concept}_{hash}/
+│   ├── snapshot_T0.050000.pkl
+│   ├── snapshot_T0.128479.pkl
+│   ├── snapshot_T0.206959.pkl
+│   └── ... (temperature-indexed snapshots)
+└── {concept}_{hash}/
+    ├── snapshot_T0.050000.pkl
+    └── ... (different simulation configuration)
+```
+
+#### Snapshot File Format
+- **Format**: Pickle files (.pkl) containing numpy arrays and metadata
+- **Content**: Vector snapshots, language codes, and simulation metadata
+- **Naming**: `snapshot_T{temperature}.pkl` for temperature-based indexing
+- **Access**: Automatic loading via temperature slider in UI
+
 ## 🔤 Concepts
 
 ### File Naming Convention
@@ -290,4 +316,23 @@ Data files have comprehensive validation:
 - **ISO 639-1**: Language code standards
 - **LaBSE**: Language-agnostic BERT embeddings
 - **NumPy**: Numerical array storage
-- **JSON**: Data interchange format 
+- **JSON**: Data interchange format
+
+## 📝 Recent Updates
+
+### Snapshot Storage System
+- **Disk-based vector storage**: Added persistent storage of simulation vectors at each temperature step
+- **Hash-based directory naming**: Unique directory names for different simulation configurations to prevent conflicts
+- **Temperature indexing**: Efficient file naming system for temperature-based snapshot retrieval
+- **Language code preservation**: Snapshots now store actual language codes (en, es, fr, etc.) instead of generic labels
+- **Metadata storage**: Simulation parameters and timestamps stored with each snapshot for traceability
+
+### Memory Optimization
+- **Large simulation support**: Snapshots stored on disk instead of memory for simulations with many temperature steps
+- **Efficient retrieval**: Temperature slider in UI automatically loads snapshots from disk
+- **Automatic cleanup**: Old snapshot directories can be managed independently of core data
+
+### Language Labeling Enhancement
+- **Fixed UMAP display**: Language labels in UMAP plots now show actual language codes
+- **Proper parameter passing**: Language codes correctly passed from concept files through simulation to snapshots
+- **Consistent labeling**: All visualization components now use consistent language codes 

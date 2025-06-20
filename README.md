@@ -43,16 +43,17 @@ For a deeper dive and visualizing the concepts behind this simulator, see the [S
 ### 🔬 Core Simulation
 - **Multilingual Support**: 70+ languages with LaBSE embeddings
 - **Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
-- **Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
-- **Smart Temperature Estimation**: Auto-estimation with configurable limits and conservative energy scaling
+- **Disk-based Snapshot Storage**: Persistent storage of simulation vectors at each temperature step
 
 ### 📊 Analysis & Visualization
-- **Anchor Language Analysis**: Single-phase vs two-phase experimental designs
-- **Interactive Visualizations**: UMAP projections, entropy curves, correlation analysis
+- **Interactive UMAP Visualization**: Temperature slider for dynamic exploration of semantic structure
+- **Critical Temperature Detection**: log(ξ) derivative method for phase transition detection
 - **Advanced Metrics**: Cosine distance and similarity for anchor comparison
 
 ### 🖥️ User Interface
-- **Streamlit UI**: User-friendly interface with real-time simulation monitoring and progress tracking
+- **Streamlit UI**: User-friendly interface with real-time simulation monitoring
+- **Interactive Temperature Control**: Temperature slider for dynamic UMAP visualization
+- **Enhanced Metrics Display**: Three-column layout showing Critical Temperature, Cosine Distance, and Cosine Similarity
 
 ---
 
@@ -245,13 +246,11 @@ The simulator adapts Ising Model concepts for semantic analysis across languages
 
 ## 📝 Recent Improvements
 
-- **Temperature Estimation**: Enhanced auto-estimation with configurable max temperature limits and conservative 2.0× energy fluctuation multiplier
-- **UI Streamlining**: Removed non-functional power law analysis tab from simulation results for cleaner interface
-- **Progress Tracking**: Real-time progress bars and status updates during temperature sweeps
-- **Config Integration**: Temperature estimation now respects maximum temperature settings from config files
-- **UI and backend synchronization**: Critical temperature (Tc) display is consistent between UI and charts
-- **Convergence Analysis**: Enhanced convergence summary with entropy vs correlation length visualization
-- **Professional UI**: Cleaner, more user-friendly interface with improved explanations and removed debug output
+- **Interactive UMAP Visualization**: Added temperature slider for dynamic exploration of semantic structure across temperature steps
+- **Disk-based Snapshot Storage**: Implemented persistent storage of simulation vectors for memory efficiency and large simulation support
+- **Language Code Preservation**: Fixed UMAP language labels to show actual language codes (en, es, fr, etc.) instead of generic labels
+- **Enhanced Metrics Display**: Three-column layout with Critical Temperature, Cosine Distance, and Cosine Similarity prominently displayed
+- **Memory Optimization**: Temperature-based snapshot loading reduces memory usage for large simulations
 
 ---
 
@@ -276,6 +275,7 @@ See our [Contributing Guidelines](CONTRIBUTING.md) for detailed instructions.
 - [LaBSE: Language-agnostic BERT Sentence Embedding](https://arxiv.org/abs/2007.01852)
 - [The Ising model celebrates a century of interdisciplinary contributions](https://www.nature.com/articles/s44260-024-00012-0)
 - [Correlation Length in Critical Phenomena](https://en.wikipedia.org/wiki/Correlation_length)
+- [Sacco, et al., "Requirements for self organization", zenodo, 2023](https://zenodo.org/records/8416764)
 
 ---
 

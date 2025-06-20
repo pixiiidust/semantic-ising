@@ -70,8 +70,13 @@ semantic-ising/
 │   │   ├── *_25.json    # 25-language concept files
 │   │   ├── *_75.json    # 75-language concept files
 │   │   └── concepts.md  # Concept file documentation
-│   └── embeddings/       # Cached embeddings
-│       └── embeddings.md # Embedding cache documentation
+│   ├── embeddings/       # Cached embeddings
+│   │   └── embeddings.md # Embedding cache documentation
+│   └── snapshots/        # Simulation vector snapshots
+│       ├── {concept}_{hash}/ # Hash-based directory naming
+│       │   ├── snapshot_T*.pkl # Temperature-indexed snapshots
+│       │   └── metadata.json   # Simulation metadata
+│       └── data.md       # Data module documentation
 ├── tests/                # Test suite (242 tests)
 │   ├── fixtures/        # Test fixtures and data
 │   ├── test_*.py       # Test implementation files
@@ -150,6 +155,35 @@ Key dependency relationships between components:
   * Post-Analysis (19 tests)
 --]]
 
+--[[ 
+## Recent Updates (Latest Version)
+==================================
+Latest enhancements and improvements:
+
+1. **Disk-based Snapshot Storage**:
+   - Added persistent storage of simulation vectors at each temperature step
+   - Hash-based directory naming for unique simulation configurations
+   - Temperature-indexed files for efficient retrieval
+   - Language code preservation in snapshots
+
+2. **Interactive UMAP Visualization**:
+   - Temperature slider for dynamic exploration of semantic structure
+   - UMAP zoom control with 2.0× zoom factor
+   - Real-time vector loading from disk snapshots
+   - Language code preservation in UMAP plots
+
+3. **Enhanced Metrics Display**:
+   - Three-column layout: Critical Temperature, Cosine Distance, Cosine Similarity
+   - Pre-calculated metrics for all temperatures
+   - Improved Tc display with enhanced help text
+   - Debug output cleanup for cleaner UI
+
+4. **Performance Optimizations**:
+   - Memory efficiency through temperature-based snapshot loading
+   - Real-time responsiveness with pre-calculated metrics
+   - Efficient data retrieval with hash-based directory naming
+--]]
+
 return {
   -- Configuration Management
   ["config/"] = {
@@ -172,17 +206,20 @@ return {
     modules = {
       ["simulation.py"] = {
         functions = {
-          "run_temperature_sweep",  -- Main driver with multi-replica support
+          "run_temperature_sweep",  -- Main driver with multi-replica support and language parameter
           "simulate_at_temperature",  -- Ising update logic
           "update_vectors_ising",  -- Update rule dispatcher
           "update_vectors_metropolis",  -- Metropolis updates
           "update_vectors_glauber",  -- Heat-bath updates
           "collect_metrics",  -- Metric collection
           "compute_alignment",  -- Alignment calculation
-          "compute_entropy"  -- Entropy calculation
+          "compute_entropy",  -- Entropy calculation
+          "_save_snapshot_to_disk",  -- Disk-based snapshot storage
+          "_load_snapshot_from_disk",  -- Load snapshots from disk
+          "_get_available_snapshot_temperatures"  -- Get available snapshot temperatures
         },
         depends_on = {"dynamics.py", "physics.py"},
-        produces = {"temperature_metrics", "vector_snapshots"}
+        produces = {"temperature_metrics", "vector_snapshots", "snapshot_directory"}
       },
       
       ["embeddings.py"] = {
@@ -264,7 +301,15 @@ return {
   ["ui/"] = {
     modules = {
       ["charts.py"] = {
-        purpose = "Interactive visualizations",
+        purpose = "Interactive visualizations with UMAP zoom control and temperature slider integration",
+        functions = {
+          "plot_entropy_vs_temperature",  -- Entropy vs temperature plot
+          "plot_full_umap_projection",  -- UMAP projection with zoom control
+          "plot_correlation_decay",  -- Correlation decay plot
+          "plot_correlation_length_vs_temperature",  -- Correlation length vs temperature
+          "plot_alignment_vs_temperature",  -- Alignment vs temperature
+          "plot_energy_vs_temperature"  -- Energy vs temperature
+        },
         depends_on = {"core/simulation.py", "core/phase_detection.py"}
       },
       ["components.py"] = {
@@ -286,6 +331,29 @@ return {
         functions = {"init_logger", "log_event", "log_exception"},
         purpose = "Structured logging with error tracking",
         produces = {"logger_instance", "log_entries"}
+      }
+    },
+    status = "COMPLETE"
+  },
+
+  -- Data Storage
+  ["data/"] = {
+    modules = {
+      ["concepts/"] = {
+        purpose = "Multilingual concept translation files",
+        produces = {"concept_translations", "language_codes"}
+      },
+      ["embeddings/"] = {
+        purpose = "Cached embedding arrays",
+        produces = {"embedding_cache", "cached_vectors"}
+      },
+      ["snapshots/"] = {
+        purpose = "Simulation vector snapshots with hash-based directory naming",
+        functions = {
+          "snapshot_T*.pkl",  -- Temperature-indexed snapshot files
+          "metadata.json"     -- Simulation metadata storage
+        },
+        produces = {"vector_snapshots", "simulation_metadata", "temperature_index"}
       }
     },
     status = "COMPLETE"
