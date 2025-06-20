@@ -212,15 +212,9 @@ Two modes to study multilingual semantic structure:
 
 ### Ising Model for Semantics
 
-For an intuitive visualization of spin alignments in an Ising model, see this educational clip:
-
-[![YouTube](https://github.com/user-attachments/assets/ca626ded-8031-4a1e-b6dd-f92106169e03)
-](https://youtube.com/clip/Ugkxw6ZqZOVHyjWC-d2qrbx4uUUIgc4SlXF1?)
-
+For an intuitive visualization of spin alignments in an Ising model, click to watch this educational clip:
 [<img src="https://github.com/user-attachments/assets/ca626ded-8031-4a1e-b6dd-f92106169e03" width="600" height="300"
 />](https://youtube.com/clip/Ugkxw6ZqZOVHyjWC-d2qrbx4uUUIgc4SlXF1?)
-
-
 *Source: [@F_Sacco](https://www.youtube.com/@F_Sacco) / [francesco215.github.io](https://francesco215.github.io)*
 
 The simulator applies statistical physics concepts to semantic analysis:
