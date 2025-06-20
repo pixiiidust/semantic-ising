@@ -210,7 +210,7 @@ Two modes to study multilingual semantic structure:
 
 ## 🧠 Scientific Background
 
-### Ising Model for Semantics
+### The Ising Model
 
 For an intuitive visualization of spin alignments in an Ising model, click to watch this educational clip:
 
@@ -218,7 +218,9 @@ For an intuitive visualization of spin alignments in an Ising model, click to wa
 
 *Source: [@F_Sacco](https://www.youtube.com/@F_Sacco) / [francesco215.github.io](https://francesco215.github.io)*
 
-The simulator applies statistical physics concepts to semantic analysis:
+### Ising Model for Semantics
+
+The simulator adapts Ising Model concepts to semantic analysis:
 
 - **Vectors as Spins**: Multilingual concept embeddings conceived as "spin" alignments in semantic space
 - **Temperature Control**: Higher T = more randomness, Lower T = more alignment
