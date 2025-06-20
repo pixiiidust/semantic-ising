@@ -53,6 +53,7 @@ LANGUAGE_NAMES = {
     'id': 'Indonesian',
     'is': 'Icelandic',
     'ka': 'Georgian',
+    'ko': 'Korean',
     'kk': 'Kazakh',
     'km': 'Khmer',
     'kn': 'Kannada',

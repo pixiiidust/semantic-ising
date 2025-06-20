@@ -8,6 +8,7 @@ The `data/concepts/` directory contains multilingual concept translation files f
 - [File Structure](#file-structure)
 - [Supported Concepts](#supported-concepts)
 - [Language Coverage](#language-coverage)
+- [Language Code Reference](#-language-code-reference)
 - [File Formats](#file-formats)
 - [Usage Examples](#usage-examples)
 
@@ -71,6 +72,118 @@ data/concepts/
 - **Uralic**: Finnish, Hungarian, Estonian, etc.
 - **Caucasian**: Georgian, Armenian, Azerbaijani, etc.
 - **And many more**...
+
+## 🔤 Language Code Reference
+
+### ISO 639-1 Standard
+All language codes follow the **ISO 639-1** standard, which uses two-letter codes for language identification.
+
+### Complete Language Code List (75-language set)
+The following table shows all language codes used in the extended concept files, matching the `LANGUAGE_NAMES` dictionary in `ui/charts.py`:
+
+| Code | Language | Native Name |
+|------|----------|-------------|
+| `en` | English | English |
+| `fr` | French | Français |
+| `es` | Spanish | Español |
+| `de` | German | Deutsch |
+| `it` | Italian | Italiano |
+| `pt` | Portuguese | Português |
+| `nl` | Dutch | Nederlands |
+| `ru` | Russian | Русский |
+| `zh` | Chinese | 中文 |
+| `ja` | Japanese | 日本語 |
+| `af` | Afrikaans | Afrikaans |
+| `am` | Amharic | አማርኛ |
+| `ar` | Arabic | العربية |
+| `az` | Azerbaijani | Azərbaycan |
+| `be` | Belarusian | Беларуская |
+| `bg` | Bulgarian | Български |
+| `bn` | Bengali | বাংলা |
+| `bs` | Bosnian | Bosanski |
+| `ca` | Catalan | Català |
+| `cs` | Czech | Čeština |
+| `cy` | Welsh | Cymraeg |
+| `da` | Danish | Dansk |
+| `el` | Greek | Ελληνικά |
+| `et` | Estonian | Eesti |
+| `fa` | Persian | فارسی |
+| `fi` | Finnish | Suomi |
+| `ga` | Irish | Gaeilge |
+| `gl` | Galician | Galego |
+| `gu` | Gujarati | ગુજરાતી |
+| `he` | Hebrew | עברית |
+| `hi` | Hindi | हिन्दी |
+| `hr` | Croatian | Hrvatski |
+| `hu` | Hungarian | Magyar |
+| `hy` | Armenian | Հայերեն |
+| `id` | Indonesian | Bahasa Indonesia |
+| `is` | Icelandic | Íslenska |
+| `ka` | Georgian | ქართული |
+| `kk` | Kazakh | Қазақ |
+| `km` | Khmer | ខ្មែរ |
+| `kn` | Kannada | ಕನ್ನಡ |
+| `ko` | Korean | 한국어 |
+| `ku` | Kurdish | Kurdî |
+| `ky` | Kyrgyz | Кыргызча |
+| `la` | Latin | Latina |
+| `lo` | Lao | ລາວ |
+| `lt` | Lithuanian | Lietuvių |
+| `lv` | Latvian | Latviešu |
+| `mk` | Macedonian | Македонски |
+| `ml` | Malayalam | മലയാളം |
+| `mn` | Mongolian | Монгол |
+| `mr` | Marathi | मराठी |
+| `ms` | Malay | Bahasa Melayu |
+| `my` | Burmese | မြန်မာ |
+| `ne` | Nepali | नेपाली |
+| `no` | Norwegian | Norsk |
+| `pa` | Punjabi | ਪੰਜਾਬੀ |
+| `pl` | Polish | Polski |
+| `ro` | Romanian | Română |
+| `sk` | Slovak | Slovenčina |
+| `sl` | Slovenian | Slovenščina |
+| `sq` | Albanian | Shqip |
+| `sr` | Serbian | Српски |
+| `su` | Sundanese | Basa Sunda |
+| `sv` | Swedish | Svenska |
+| `ta` | Tamil | தமிழ் |
+| `te` | Telugu | తెలుగు |
+| `th` | Thai | ไทย |
+| `tl` | Tagalog | Tagalog |
+| `tr` | Turkish | Türkçe |
+| `uk` | Ukrainian | Українська |
+| `ur` | Urdu | اردو |
+| `vi` | Vietnamese | Tiếng Việt |
+| `xh` | Xhosa | isiXhosa |
+| `yi` | Yiddish | יידיש |
+| `yo` | Yoruba | Yorùbá |
+| `zu` | Zulu | isiZulu |
+
+### Language Code Usage Examples
+```json
+{
+  "en": "dog",      // English
+  "es": "perro",    // Spanish
+  "fr": "chien",    // French
+  "de": "Hund",     // German
+  "zh": "狗",       // Chinese (Simplified)
+  "ja": "犬",       // Japanese
+  "ko": "개",       // Korean
+  "ar": "كلب",      // Arabic
+  "hi": "कुत्ता",   // Hindi
+  "ru": "собака",   // Russian
+  "th": "สุนัข",    // Thai
+  "vi": "chó"       // Vietnamese
+}
+```
+
+### Language Code Validation
+- **Format**: Two-letter codes only (ISO 639-1)
+- **Case**: Lowercase letters
+- **Validation**: All codes must be valid ISO 639-1 codes
+- **Uniqueness**: Each code can appear only once per concept file
+- **Consistency**: Matches `LANGUAGE_NAMES` dictionary in `ui/charts.py`
 
 ## 📄 File Formats
 
