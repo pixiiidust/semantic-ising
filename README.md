@@ -59,13 +59,13 @@ For a deeper dive and visualizing the concepts behind this simulator, see the [S
 
 ## 📸 Screenshots
 
-### Visualize multilingual concept mappings
+### Visualize multilingual mappings (Updated with clustering)   
 <img src="https://github.com/user-attachments/assets/90fda98e-9f60-4f75-8357-06980d1cb781"/>
 
 ### Map structural thresholds
 <img src="https://github.com/user-attachments/assets/85a264ba-30c7-4302-8a32-c4f0ec862469"/>
 
-### Dashboard Configuration Sidebar Updated with Settings for Advanced Users  
+### Dashboard Configuration Sidebar (Updated with Settings for Advanced Users)  
 <img src="https://github.com/user-attachments/assets/bdd894d4-092f-45d8-bb1e-28ce482032bd"/>
 
 ---
