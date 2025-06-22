@@ -256,3 +256,67 @@ pyyaml>=6.0                 # Configuration
 - Convergence diagnostics
 
 For detailed implementation references, see inline documentation in respective modules.
+
+# Python Virtual Environment Setup (.venv)
+
+Using a virtual environment is highly recommended for Python projects to avoid dependency conflicts and keep your global Python installation clean.
+
+### 1. Create a Virtual Environment
+
+#### Windows (PowerShell):
+```powershell
+python -m venv .venv
+```
+
+#### macOS/Linux:
+```bash
+python3 -m venv .venv
+```
+
+### 2. Activate the Virtual Environment
+
+#### Windows (PowerShell):
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+#### macOS/Linux:
+```bash
+source .venv/bin/activate
+```
+
+You should see your prompt change to indicate the environment is active, e.g.:
+```
+(.venv) D:\semantic-ising>
+```
+
+### 3. Install Project Dependencies
+
+With the virtual environment activated, run:
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Deactivate the Virtual Environment
+
+When finished, you can deactivate with:
+```bash
+deactivate
+```
+
+### 5. Common Issues & Troubleshooting
+
+- **'python' not found:**
+  - Try `python3` instead of `python` on macOS/Linux.
+- **Activation script not found:**
+  - Ensure you are in the project root and `.venv` exists.
+- **Permission denied (macOS/Linux):**
+  - Run `chmod +x .venv/bin/activate` if needed.
+- **PowerShell execution policy (Windows):**
+  - If you see a policy error, run: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+- **Dependencies not installing:**
+  - Ensure your virtual environment is activated before running `pip install`.
+
+## 6. Additional Resources
+- [Python venv documentation](https://docs.python.org/3/library/venv.html)
+- [pip documentation](https://pip.pypa.io/en/stable/)

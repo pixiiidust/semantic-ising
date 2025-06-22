@@ -50,20 +50,17 @@ The core modules implement the scientific foundation of the Semantic Ising Simul
 - Comprehensive validation and error handling
 
 ### 🌡️ `temperature_estimation.py`
-**Purpose**: Intelligent temperature range estimation for optimal simulation
+**Purpose**: Critical temperature detection and phase transition analysis
 
 **Key Functions**:
-- `estimate_critical_temperature(vectors)` - Estimate Tc from initial similarity
-- `estimate_max_temperature(vectors)` - Estimate Tmax from energy fluctuations (uses 2.0× multiplier for conservative estimates)
-- `estimate_practical_range(vectors, config_max_temperature=None)` - Estimate optimal [Tmin, Tmax] range with config respect
-- `quick_scan_probe(vectors, T_range)` - Refine temperature range estimate
+- `estimate_critical_temperature(temperatures, correlation_lengths)` - Tc detection
+- `detect_phase_transition(temperatures, metrics)` - Phase transition analysis
 
 **Features**:
-- Physics-based estimation using vector similarity and energy fluctuations
-- Configurable max temperature parameter to respect user settings
-- Conservative 2.0× multiplier for energy fluctuation scaling
-- Automatic range validation and adjustment
-- Integration with simulation workflow
+- **Log(ξ) derivative method**: Robust critical temperature detection
+- **Knee detection**: Identifies temperature where correlation length collapses
+- **Statistical validation**: Confidence intervals and uncertainty estimation
+- **Multiple metric support**: Works with correlation length, alignment, and entropy
 
 ### 🔥 `simulation.py`
 **Purpose**: Core Ising model simulation engine with disk-based snapshot storage
@@ -168,6 +165,9 @@ The core modules implement the scientific foundation of the Semantic Ising Simul
 - Correlation analysis and interpretation
 - Data preparation for UI visualizations
 - Comprehensive error handling and validation
+- **Disk-based snapshot support**: Handles both in-memory and disk-based vector snapshots
+- **Original anchor vector preservation**: Uses original anchor vectors for comparison, not evolved ones
+- **Consistent metrics calculation**: Ensures anchor comparison metrics are calculated consistently across all UI components
 
 ### 🔬 `physics.py`
 **Purpose**: Energy calculations and physical consistency

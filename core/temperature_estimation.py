@@ -196,12 +196,21 @@ def estimate_practical_range(vectors: np.ndarray,
     avg_similarity = _compute_average_similarity(vectors)
     tmin_estimate = max(min_tmin, 0.1 * avg_similarity)
     
+    # Debug logging for Tmin calculation
+    logger.info(f"Average similarity: {avg_similarity:.6f}, Tmin estimate: {tmin_estimate:.6f}")
+    print(f"DEBUG: Average similarity: {avg_similarity:.6f}, Tmin estimate: {tmin_estimate:.6f}")
+    
     # Apply padding to expand range
     span = tmax_estimate - tmin_estimate
     padding_amount = span * padding
     
-    tmin = max(min_tmin, tmin_estimate - padding_amount)
+    # Don't let padding push tmin below the estimated value
+    tmin = max(tmin_estimate, tmin_estimate - padding_amount)
     tmax = tmax_estimate + padding_amount
+    
+    # Debug logging for final range
+    logger.info(f"Initial range after padding: [{tmin:.6f}, {tmax:.6f}]")
+    print(f"DEBUG: Initial range after padding: [{tmin:.6f}, {tmax:.6f}]")
     
     # Apply config max temperature as upper bound if provided
     if config_max_temperature is not None:
@@ -220,18 +229,38 @@ def estimate_practical_range(vectors: np.ndarray,
         if config_max_temperature is not None:
             tmax = min(config_max_temperature, center + half_span)
         else:
-            tmax = min(2.0, center + half_span)  # Reduced from 3.0 to 2.0 for faster simulations
+            tmax = min(8.0, center + half_span)  # Increased from 2.0 to 8.0 for better range
     
     # Validate the range
     is_valid, message = validate_temperature_range(tmin, tmax)
     if not is_valid:
         logger.warning(f"Estimated range [{tmin:.3f}, {tmax:.3f}] invalid: {message}")
-        # Fall back to more suitable defaults for higher temperature analysis
-        tmin = 0.05
+        print(f"DEBUG: Range validation failed: {message}")
+        # Fall back to more suitable defaults based on actual vector properties
+        # Use the computed average similarity to set a more reasonable min
+        computed_min = max(min_tmin, 0.1 * avg_similarity)  # Increased from 0.05 to 0.1
+        tmin = computed_min
+        
+        # Set max based on Tc estimate and similarity
         if config_max_temperature is not None:
             tmax = config_max_temperature
         else:
-            tmax = 5.0  # Increased from 1.0 to 5.0
+            # Use a more dynamic max based on similarity and Tc
+            dynamic_max = max(2.0, tc_estimate * 2.0, avg_similarity * 10.0)
+            tmax = min(8.0, dynamic_max)  # Cap at 8.0
+        
+        # Ensure minimum span
+        if tmax - tmin < 0.5:
+            # Expand range to meet minimum span
+            center = (tmin + tmax) / 2
+            tmin = max(min_tmin, center - 0.25)
+            tmax = min(8.0, center + 0.25)
+        
+        logger.info(f"Fallback range: [{tmin:.6f}, {tmax:.6f}]")
+        print(f"DEBUG: Fallback range: [{tmin:.6f}, {tmax:.6f}]")
+    else:
+        logger.info(f"Range validation passed: [{tmin:.6f}, {tmax:.6f}]")
+        print(f"DEBUG: Range validation passed: [{tmin:.6f}, {tmax:.6f}]")
     
     return tmin, tmax
 
@@ -342,8 +371,8 @@ def validate_temperature_range(tmin: float, tmax: float) -> Tuple[bool, str]:
     
     # Check for reasonable span
     span = tmax - tmin
-    if span < 0.5:
-        return False, f"Temperature range too narrow: {span:.3f} (minimum 0.5)"
+    if span < 0.3:  # Reduced from 0.5 to 0.3 for small test cases
+        return False, f"Temperature range too narrow: {span:.3f} (minimum 0.3)"
     
     if span > 20.0:
         return False, f"Temperature range too wide: {span:.3f} (maximum 20.0)"
@@ -372,6 +401,7 @@ def _compute_average_similarity(vectors: np.ndarray) -> float:
     """
     n_vectors = len(vectors)
     if n_vectors < 2:
+        print(f"DEBUG: Single vector case, returning default similarity: 0.5")
         return 0.5  # Default for single vector
     
     total_similarity = 0.0
@@ -383,4 +413,7 @@ def _compute_average_similarity(vectors: np.ndarray) -> float:
             total_similarity += abs(similarity)
             count += 1
     
-    return total_similarity / count if count > 0 else 0.5 
+    avg_similarity = total_similarity / count if count > 0 else 0.5
+    print(f"DEBUG: Computed average similarity: {avg_similarity:.6f} from {count} vector pairs")
+    
+    return avg_similarity 

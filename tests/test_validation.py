@@ -11,8 +11,7 @@ from scipy.stats import entropy
 from scipy.spatial.distance import cosine
 
 # Import core modules for validation
-from core.simulation import compute_alignment, compute_entropy, total_system_energy
-from core.dynamics import compute_correlation_matrix, compute_correlation_length
+from core.simulation import compute_alignment, compute_entropy, total_system_energy, compute_correlation_matrix, compute_correlation_length
 from core.meta_vector import compute_centroid, compute_medoid, compute_weighted_mean
 from core.comparison_metrics import compute_procrustes_distance, compute_cka_similarity
 from core.phase_detection import find_critical_temperature

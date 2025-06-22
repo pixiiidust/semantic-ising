@@ -92,39 +92,71 @@ def generate_embeddings(concept_name: str, encoder_name: str, filename: str = No
     # Generate new embeddings
     translations = load_concept_embeddings(concept_name, filename)
     
+    # Check if we should use mock embeddings due to PyTorch issues
+    use_mock_embeddings = False
+    
     try:
-        from sentence_transformers import SentenceTransformer
+        # Try to import sentence transformers with comprehensive error handling
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError as import_error:
+            logger.warning(f"Sentence transformers import failed: {import_error}")
+            use_mock_embeddings = True
+        except Exception as e:
+            if "torch" in str(e).lower() or "torch._classes" in str(e) or "meta tensor" in str(e).lower():
+                logger.warning(f"PyTorch-related import error: {e}")
+                use_mock_embeddings = True
+            else:
+                raise ImportError(f"Unexpected import error: {e}")
         
-        model = SentenceTransformer(encoder_name)
-        texts = list(translations.values())
-        embeddings = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
-        
-        # Normalize embeddings to unit length
-        embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-        
-        # Cache embeddings
-        cache_embeddings(embeddings, cache_key, encoder_name)
-        
-        return embeddings, list(translations.keys())
-        
-    except ImportError as e:
-        if "torch" in str(e).lower() or "torch._classes" in str(e):
-            # Create mock embeddings for testing when PyTorch fails
-            logger.warning(f"PyTorch import error: {e}. Creating mock embeddings for testing.")
-            n_languages = len(translations)
-            # Create random embeddings with proper shape (768 dimensions like LaBSE)
-            mock_embeddings = np.random.randn(n_languages, 768)
-            # Normalize to unit length
-            mock_embeddings = mock_embeddings / np.linalg.norm(mock_embeddings, axis=1, keepdims=True)
+        if not use_mock_embeddings:
+            # Try to create model with comprehensive error handling
+            try:
+                # Force CPU device to avoid meta tensor issues
+                model = SentenceTransformer(encoder_name, device='cpu')
+            except Exception as model_error:
+                if any(keyword in str(model_error).lower() for keyword in ["meta tensor", "torch.nn.Module.to_empty", "custom class", "torch._classes"]):
+                    logger.warning(f"PyTorch device/custom class error: {model_error}")
+                    use_mock_embeddings = True
+                else:
+                    raise RuntimeError(f"Model creation failed: {model_error}")
             
-            # Cache mock embeddings
-            cache_embeddings(mock_embeddings, cache_key, encoder_name)
-            
-            return mock_embeddings, list(translations.keys())
-        else:
-            raise RuntimeError(f"Missing dependency: {e}. Please install sentence-transformers.")
+            if not use_mock_embeddings:
+                texts = list(translations.values())
+                
+                # Try to encode with comprehensive error handling
+                try:
+                    embeddings = model.encode(texts, convert_to_numpy=True, show_progress_bar=False, device='cpu')
+                except Exception as encode_error:
+                    if any(keyword in str(encode_error).lower() for keyword in ["meta tensor", "custom class", "torch._classes"]):
+                        logger.warning(f"PyTorch encoding error: {encode_error}")
+                        use_mock_embeddings = True
+                    else:
+                        raise RuntimeError(f"Encoding failed: {encode_error}")
+                
+                if not use_mock_embeddings:
+                    # Normalize embeddings to unit length
+                    embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+                    
+                    # Cache embeddings
+                    cache_embeddings(embeddings, cache_key, encoder_name)
+                    
+                    return embeddings, list(translations.keys())
+        
     except Exception as e:
-        raise RuntimeError(f"Failed to generate embeddings: {e}")
+        logger.warning(f"Unexpected error in embedding generation: {e}")
+        use_mock_embeddings = True
+    
+    # Create mock embeddings for testing when PyTorch fails
+    if use_mock_embeddings:
+        raise RuntimeError(
+            "Failed to generate real embeddings due to PyTorch/sentence-transformers issues. "
+            "Check your environment, PyTorch, and sentence-transformers installation. "
+            "Mock embeddings are disabled for production use."
+        )
+    
+    # This should never be reached, but just in case
+    raise RuntimeError("Failed to generate embeddings: Unknown error")
 
 
 def cache_embeddings(embeddings: np.ndarray, concept: str, encoder: str) -> str:

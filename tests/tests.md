@@ -24,6 +24,10 @@ The test suite provides comprehensive validation for the Semantic Ising Simulato
 ## 📝 Recent Updates
 - Tests updated to match new Tc detection logic and UI output.
 - All new/changed logic is covered by corresponding tests, including UI synchronization and chart display for critical temperature.
+- **Log(ξ) derivative method**: Tests updated to verify critical temperature detection using correlation length derivative
+- **Anchor comparison metrics consistency**: Tests updated to verify that both main metrics and interactive metrics use original anchor vectors for comparison
+- **Disk-based snapshot handling**: Tests added to verify proper handling of disk-based snapshots when in-memory snapshots are not available
+- **Session state synchronization**: Tests updated to verify consistent metrics display across all UI components
 
 ## 📁 Test Structure
 

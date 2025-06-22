@@ -15,16 +15,62 @@ import logging
 
 # Import existing core modules
 from .comparison_metrics import compare_anchor_to_multilingual
-from .dynamics import compute_correlation_length, compute_correlation_matrix
+from .simulation import compute_correlation_length, compute_correlation_matrix
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 
+def _calculate_custom_anchor_metrics(anchor_vectors: np.ndarray, tc_vectors: np.ndarray, k: int = 3) -> Dict[str, float]:
+    """
+    Calculate custom anchor comparison metrics.
+
+    Args:
+        anchor_vectors: The anchor vector(s).
+        tc_vectors: The vectors of other languages at the critical temperature.
+        k: The number of nearest neighbors for the k-NN metric.
+
+    Returns:
+        A dictionary with the calculated metrics and the meta-vector.
+    """
+    if anchor_vectors is None or len(anchor_vectors) == 0:
+        return {}
+    if tc_vectors is None or len(tc_vectors) == 0:
+        return {}
+    
+    # Assuming a single anchor vector for comparison
+    anchor_vector = anchor_vectors[0]
+
+    # 1. Calculate cosine similarity with the meta-vector
+    meta_vector = np.mean(tc_vectors, axis=0)
+    meta_vector /= np.linalg.norm(meta_vector)
+    cos_anchor_meta_vector = np.dot(anchor_vector, meta_vector)
+
+    # 2. Calculate average cosine similarity with k-Nearest Neighbors
+    if len(tc_vectors) < k:
+        logger.warning(f"Number of vectors ({len(tc_vectors)}) is less than k ({k}), using all vectors for k-NN.")
+        k = len(tc_vectors)
+
+    similarities = np.dot(tc_vectors, anchor_vector)
+    top_k_indices = np.argsort(similarities)[-k:]
+    avg_cos_anchor_knn = np.mean(similarities[top_k_indices])
+
+    return {
+        'metrics': {
+            'cos_anchor_meta_vector': cos_anchor_meta_vector,
+            'avg_cos_anchor_knn': avg_cos_anchor_knn,
+            'cosine_similarity': cos_anchor_meta_vector, 
+            'cosine_distance': 1 - cos_anchor_meta_vector
+        },
+        'meta_vector': meta_vector
+    }
+
+
 def analyze_simulation_results(
     simulation_results: Dict[str, Any], 
     anchor_vectors: np.ndarray, 
-    tc: float
+    tc: float,
+    k_nn_value: int = 3
 ) -> Dict[str, Any]:
     """
     Perform post-simulation analysis including anchor comparison.
@@ -38,6 +84,7 @@ def analyze_simulation_results(
         simulation_results: Dictionary containing simulation results
         anchor_vectors: Anchor language vectors for comparison
         tc: Critical temperature for analysis
+        k_nn_value: The number of nearest neighbors for the k-NN metric
     
     Returns:
         Dictionary containing analysis results:
@@ -89,12 +136,16 @@ def analyze_simulation_results(
     actual_tc = valid_temperatures[tc_idx]
     
     logger.info(f"Using temperature {actual_tc:.3f} (closest to Tc={tc:.3f}) for analysis")
+    print(f"DEBUG: Post-analysis using temperature {actual_tc:.3f} (closest to Tc={tc:.3f})")
     
     # Extract vectors at critical temperature
-    if 'vector_snapshots' in simulation_results and actual_tc in simulation_results['vector_snapshots']:
-        # Use vector snapshots if available
-        tc_vectors = simulation_results['vector_snapshots'][actual_tc]
-        logger.info(f"Using vector snapshots at T = {actual_tc}")
+    if 'vector_snapshots' in simulation_results and simulation_results['vector_snapshots']:
+        # Find the closest available snapshot temperature to the critical temperature
+        available_temps = list(simulation_results['vector_snapshots'].keys())
+        closest_tc = min(available_temps, key=lambda t: abs(t - actual_tc))
+        tc_vectors = simulation_results['vector_snapshots'][closest_tc]
+        logger.info(f"Using vector snapshots at T = {closest_tc} (closest to {actual_tc})")
+        print(f"DEBUG: Using vector snapshots at T = {closest_tc} (closest to {actual_tc})")
     else:
         # Fallback to original dynamics vectors
         tc_vectors = simulation_results.get('dynamics_vectors')
@@ -104,17 +155,18 @@ def analyze_simulation_results(
                 first_tc = list(simulation_results['vector_snapshots'].keys())[0]
                 tc_vectors = simulation_results['vector_snapshots'][first_tc]
                 logger.info(f"Using vectors from first available snapshot at T = {first_tc}")
+                print(f"DEBUG: Using vectors from first available snapshot at T = {first_tc}")
             else:
                 logger.error("No vectors available for analysis - no snapshots or dynamics_vectors found")
+                print(f"DEBUG: No vectors available for analysis")
                 # Return empty analysis results instead of raising error
                 return {
                     'critical_temperature': tc,
                     'anchor_comparison': {
-                        'procrustes_distance': np.nan,
-                        'cka_similarity': np.nan,
-                        'emd_distance': np.nan,
-                        'kl_divergence': np.nan,
-                        'cosine_similarity': np.nan
+                        'cos_anchor_meta_vector': np.nan,
+                        'avg_cos_anchor_knn': np.nan,
+                        'cosine_similarity': np.nan,
+                        'cosine_distance': np.nan
                     },
                     'correlation_analysis': {
                         'correlation_length': np.nan,
@@ -123,25 +175,33 @@ def analyze_simulation_results(
                 }
         else:
             logger.info(f"Using original dynamics vectors for analysis at T = {actual_tc}")
+            print(f"DEBUG: Using original dynamics vectors for analysis at T = {actual_tc}")
+    
+    print(f"DEBUG: Available snapshot temperatures: {list(simulation_results.get('vector_snapshots', {}).keys())}")
+    print(f"DEBUG: Actual Tc used for analysis: {actual_tc}")
+    print(f"DEBUG: Closest snapshot temperature: {closest_tc if 'vector_snapshots' in simulation_results and simulation_results['vector_snapshots'] else 'N/A'}")
     
     # Perform anchor comparison at critical temperature
     try:
-        anchor_comparison = compare_anchor_to_multilingual(
+        comparison_results = _calculate_custom_anchor_metrics(
             anchor_vectors, 
-            tc_vectors, 
-            actual_tc, 
-            metrics
+            tc_vectors,
+            k_nn_value
         )
-        logger.info("Anchor comparison completed successfully")
+        anchor_comparison = comparison_results.get('metrics', {})
+        meta_vector_at_tc = comparison_results.get('meta_vector')
+        logger.info("Custom anchor comparison completed successfully")
+        print(f"DEBUG: Anchor comparison metrics calculated: {anchor_comparison}")
     except Exception as e:
-        logger.error(f"Anchor comparison failed: {e}")
+        logger.error(f"Custom anchor comparison failed: {e}")
+        print(f"DEBUG: Anchor comparison failed: {e}")
         anchor_comparison = {
-            'procrustes_distance': np.nan,
-            'cka_similarity': np.nan,
-            'emd_distance': np.nan,
-            'kl_divergence': np.nan,
-            'cosine_similarity': np.nan
+            'cos_anchor_meta_vector': np.nan,
+            'avg_cos_anchor_knn': np.nan,
+            'cosine_similarity': np.nan,
+            'cosine_distance': np.nan
         }
+        meta_vector_at_tc = None
     
     # Perform correlation analysis at critical temperature
     try:
@@ -163,7 +223,8 @@ def analyze_simulation_results(
     analysis_results = {
         'critical_temperature': actual_tc,
         'anchor_comparison': anchor_comparison,
-        'correlation_analysis': correlation_analysis
+        'correlation_analysis': correlation_analysis,
+        'meta_vector_at_tc': meta_vector_at_tc
     }
     
     logger.info(f"Post-simulation analysis completed for T = {actual_tc}")
@@ -279,7 +340,7 @@ def interpret_analysis_results(analysis_results: Dict[str, Any]) -> Dict[str, st
     
     # Interpret anchor comparison results
     anchor_comparison = analysis_results.get('anchor_comparison', {})
-    cka_similarity = anchor_comparison.get('cka_similarity', np.nan)
+    cka_similarity = anchor_comparison.get('cosine_similarity', np.nan)
     
     if not np.isnan(cka_similarity):
         if cka_similarity > 0.7:

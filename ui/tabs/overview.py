@@ -99,20 +99,21 @@ def render_overview_tab(concept: str, encoder: str, T_range: List[float],
         """)
     
     # Methodology
-    with st.expander("🔬 Methodology", expanded=False):
+    with st.expander("Methodology", expanded=False):
         st.markdown("""
         **Semantic Ising Model**:
-        - **Embedding Generation**: Multilingual embeddings for the target concept
-        - **Ising Dynamics**: Temperature-dependent vector updates using Metropolis/Glauber rules
+        - **Embedding Generation**: Multilingual embeddings for the target concept using LaBSE
+        - **Ising Dynamics**: Temperature-dependent vector updates using Metropolis/Glauber rules with k-NN constraints
         - **Phase Detection**: Critical temperature detection using log(ξ) derivative method (knee in correlation length)
-        - **Comparison Analysis**: Anchor language comparison using cosine distance and similarity
-        - **Power Law Analysis**: Cluster size distribution analysis for critical behavior
+        - **Clustering Analysis**: Ising-compatible clustering with adaptive, temperature-dependent thresholds
+        - **Anchor Comparison**: Anchor language comparison using cosine distance and similarity at critical temperature
         
         **Key Metrics**:
-        - **Alignment**: Average cosine similarity between vectors
-        - **Correlation Length**: Characteristic length scale of correlations
+        - **Alignment**: Average cosine similarity between vectors (0-1, higher is better)
+        - **Correlation Length**: Characteristic length scale of correlations (phase transition indicator)
         - **Cosine Distance**: Primary semantic distance metric for anchor comparison (0-1, lower is better)
         - **Cosine Similarity**: Directional similarity for anchor comparison (0-1, higher is better)
+        - **Critical Temperature (Tc)**: Temperature where semantic phase transition occurs
         """)
     
     # Troubleshooting

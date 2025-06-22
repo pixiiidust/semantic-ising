@@ -15,8 +15,7 @@ from functools import wraps
 
 # Import core modules for benchmarking
 from core.embeddings import generate_embeddings, load_concept_embeddings
-from core.simulation import run_temperature_sweep, simulate_at_temperature
-from core.dynamics import compute_correlation_matrix, compute_correlation_length
+from core.simulation import run_temperature_sweep, simulate_at_temperature, compute_correlation_matrix, compute_correlation_length
 from core.phase_detection import find_critical_temperature, detect_powerlaw_regime
 from core.clustering import cluster_vectors
 from core.comparison_metrics import compare_anchor_to_multilingual

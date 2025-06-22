@@ -2,7 +2,7 @@
 # v0.2 API locked
 
 # Temperature sweep parameters
-temperature_range: [0.1, 6.0]
+temperature_range: [0.05, 6.0]
 temperature_steps: 50 # Default number of temperature steps
 
 # Default encoder model
@@ -39,7 +39,4 @@ simulation_params:
 # Clustering parameters
 cluster_params:
   similarity_threshold: 0.8  # Base threshold (actual threshold varies with temperature: 0.8-0.95)
-  min_cluster_size: 1
-
-# Correlation analysis parameters
-lambda_distance: 0.5  # Exponential decay parameter for linguistic distance weighting 
+  min_cluster_size: 1 

@@ -281,7 +281,8 @@ pytest tests/test_ui_integration.py -v
 - **Three-column layout**: Critical Temperature, Cosine Distance, and Cosine Similarity displayed consistently
 - **Improved Tc display**: Critical temperature prominently shown with enhanced help text
 - **Pre-calculated metrics**: All temperature metrics calculated after simulation to avoid real-time computation
-- **Debug output cleanup**: Removed debug messages for cleaner user experience
+- **Consistent anchor comparison**: Both main metrics and interactive metrics use original anchor vectors
+- **Disk-based snapshot support**: Proper handling of disk-based snapshots for recalculation
 
 ### Language Labeling Improvements
 - **Fixed UMAP language display**: Language labels now show actual language codes (en, es, fr, etc.) instead of generic labels
@@ -291,4 +292,10 @@ pytest tests/test_ui_integration.py -v
 ### Performance Enhancements
 - **Efficient data retrieval**: Hash-based snapshot directory naming for unique simulation configurations
 - **Smooth interaction**: Pre-calculated metrics enable responsive temperature slider interaction
-- **Optimized memory usage**: Temperature-based snapshot loading instead of loading all snapshots at once 
+- **Optimized memory usage**: Temperature-based snapshot loading instead of loading all snapshots at once
+
+### Anchor Comparison Metrics Consistency
+- **Consistent calculation method**: Both main metrics and interactive metrics now use original anchor vectors for comparison
+- **Disk-based recalculation**: Fixed anchor comparison recalculation to properly handle disk-based snapshots when in-memory snapshots are not available
+- **Session state synchronization**: All UI components display consistent metrics by updating session state after recalculation
+- **Original anchor vector preservation**: Ensures comparison metrics reflect the relationship between original anchor language and evolved multilingual structure 

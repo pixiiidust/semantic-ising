@@ -151,9 +151,9 @@ def render_anchor_config() -> Tuple[str, bool]:
         
         # Include anchor in dynamics toggle
         include_anchor = st.checkbox(
-            "Include anchor in multilingual set",
-            value=False,
-            help="✅ Include: Anchor participates in simulation\n❌ Exclude: Anchor compared to multilingual result"
+            "Include anchor in dynamics",
+            value=True,
+            help="✅ CHECKED (Recommended): Anchor language participates in Ising dynamics with other languages. ❌ UNCHECKED: Anchor is excluded from dynamics and only compared to the final result."
         )
         
         # Display experiment type
@@ -248,7 +248,7 @@ def render_metrics_summary(metrics: Dict[str, float]) -> None:
         logger.error(f"Error rendering metrics summary: {e}")
 
 
-def render_critical_temperature_display(tc: float, method: str = "Binder Cumulant") -> None:
+def render_critical_temperature_display(tc: float, method: str = "Log(ξ) Derivative") -> None:
     """
     Render critical temperature display with method information
     

@@ -1,62 +1,29 @@
 import numpy as np
 from typing import Dict
-from scipy.spatial import procrustes
-from scipy.stats import wasserstein_distance, entropy
 
 # Import meta_vector computation
 from .meta_vector import compute_meta_vector
 
-def compute_procrustes_distance(vectors_a: np.ndarray, vectors_b: np.ndarray) -> float:
-    """Compute Procrustes distance between two sets of vectors."""
-    if vectors_a.shape != vectors_b.shape:
-        raise ValueError("Vector sets must have same shape")
+def compute_cosine_similarity_matrix(vectors: np.ndarray) -> np.ndarray:
+    """
+    Compute cosine similarity matrix between all pairs of vectors.
     
-    if vectors_a.size == 0:
-        raise ValueError("Empty vectors not supported")
+    Args:
+        vectors: Array of shape (n_vectors, dim) containing the vectors
+        
+    Returns:
+        Array of shape (n_vectors, n_vectors) containing cosine similarities
+    """
+    if len(vectors) == 0:
+        return np.array([])
     
-    # Procrustes analysis returns (transformed_a, transformed_b, disparity)
-    _, _, disparity = procrustes(vectors_a, vectors_b)
-    return disparity
-
-def compute_cka_similarity(vectors_a: np.ndarray, vectors_b: np.ndarray) -> float:
-    """Compute Centered Kernel Alignment similarity between two sets of vectors."""
-    # Center the vectors
-    vectors_a_centered = vectors_a - np.mean(vectors_a, axis=0)
-    vectors_b_centered = vectors_b - np.mean(vectors_b, axis=0)
+    # Normalize vectors
+    normalized_vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
     
-    # Compute kernel matrices
-    K_a = vectors_a_centered @ vectors_a_centered.T
-    K_b = vectors_b_centered @ vectors_b_centered.T
+    # Compute cosine similarity matrix
+    similarity_matrix = np.dot(normalized_vectors, normalized_vectors.T)
     
-    # Compute CKA
-    numerator = np.trace(K_a @ K_b)
-    denominator = np.sqrt(np.trace(K_a @ K_a) * np.trace(K_b @ K_b))
-    
-    return numerator / denominator if denominator > 0 else 0.0
-
-def compute_emd_distance(vectors_a: np.ndarray, vectors_b: np.ndarray) -> float:
-    """Compute Earth Mover's Distance between vector distributions."""
-    # Flatten vectors for 1D EMD computation
-    flat_a = vectors_a.flatten()
-    flat_b = vectors_b.flatten()
-    
-    return wasserstein_distance(flat_a, flat_b)
-
-def compute_kl_divergence(vectors_a: np.ndarray, vectors_b: np.ndarray, bins: int = 50) -> float:
-    """Compute KL divergence between vector distributions."""
-    # Compute histograms of flattened vectors
-    flat_a = vectors_a.flatten()
-    flat_b = vectors_b.flatten()
-    
-    hist_a, _ = np.histogram(flat_a, bins=bins, density=True)
-    hist_b, _ = np.histogram(flat_b, bins=bins, density=True)
-    
-    # Add small epsilon to avoid log(0)
-    epsilon = 1e-10
-    hist_a = hist_a + epsilon
-    hist_b = hist_b + epsilon
-    
-    return entropy(hist_a, hist_b)
+    return similarity_matrix
 
 def compare_anchor_to_multilingual(anchor_vectors: np.ndarray, multilingual_vectors: np.ndarray, tc: float, metrics: Dict[str, np.ndarray]) -> Dict[str, float]:
     """

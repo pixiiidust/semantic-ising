@@ -182,6 +182,12 @@ Latest enhancements and improvements:
    - Memory efficiency through temperature-based snapshot loading
    - Real-time responsiveness with pre-calculated metrics
    - Efficient data retrieval with hash-based directory naming
+
+5. **Cluster Formation Animation** (In Development):
+   - Enhanced cluster detection with semantic clustering
+   - Physics-based color coding for flip behavior
+   - Animated cluster boundaries in UMAP visualization
+   - Interactive cluster evolution across temperature
 --]]
 
 return {
@@ -232,31 +238,23 @@ return {
       },
 
       ["dynamics.py"] = {
-        functions = {
-          "compute_correlation_matrix",  -- Cosine similarity matrix
-          "compute_correlation_length",  -- With linguistic weighting
-          "alignment_curvature"  -- For Tc detection
-        },
-        produces = {"correlation_matrix", "correlation_length", "curvature_array"}
-      },
-
-      ["physics.py"] = {
         functions = {"total_system_energy"},
-        purpose = "Hamiltonian energy calculation",
+        purpose = "Energy calculation with consistent Hamiltonian",
         produces = {"energy_value"}
       },
 
       ["phase_detection.py"] = {
         functions = {"find_critical_temperature"},
         purpose = "Tc detection via log(ξ) derivative",
-        depends_on = {"dynamics.py", "clustering.py"},
+        depends_on = {"clustering.py"},
         produces = {"critical_temperature"}
       },
 
       ["clustering.py"] = {
-        functions = {"cluster_vectors"},
-        purpose = "Cosine similarity clustering",
-        produces = {"cluster_list"}
+        functions = {"cluster_vectors", "cluster_vectors_kmeans"},
+        purpose = "Cosine similarity and k-means clustering",
+        produces = {"cluster_list", "kmeans_cluster_list"},
+        status = "DEVELOPING"
       },
 
       ["meta_vector.py"] = {
@@ -312,6 +310,7 @@ return {
         },
         depends_on = {"core/simulation.py", "core/phase_detection.py"}
       },
+
       ["components.py"] = {
         purpose = "Reusable UI elements",
         depends_on = {"core/temperature_estimation.py"}
@@ -354,6 +353,66 @@ return {
           "metadata.json"     -- Simulation metadata storage
         },
         produces = {"vector_snapshots", "simulation_metadata", "temperature_index"}
+      }
+    },
+    status = "COMPLETE"
+  },
+
+  -- Test Suite
+  ["tests/"] = {
+    modules = {
+      ["test_simulation.py"] = {
+        purpose = "Core simulation tests",
+        test_prefix = "T1",
+        depends_on = {"core/simulation.py"}
+      },
+      ["test_embeddings.py"] = {
+        purpose = "Embedding generation tests",
+        test_prefix = "T2",
+        depends_on = {"core/embeddings.py"}
+      },
+      ["test_phase_detection.py"] = {
+        purpose = "Phase detection tests",
+        test_prefix = "T3",
+        depends_on = {"core/phase_detection.py"}
+      },
+      ["test_post_analysis.py"] = {
+        purpose = "Post-analysis tests",
+        test_prefix = "T4",
+        depends_on = {"core/post_analysis.py"}
+      },
+      ["test_temperature_estimation.py"] = {
+        purpose = "Temperature estimation tests",
+        test_prefix = "T5",
+        depends_on = {"core/temperature_estimation.py"}
+      },
+      ["test_ui.py"] = {
+        purpose = "UI component tests",
+        test_prefix = "T6",
+        depends_on = {"ui/charts.py", "ui/components.py"}
+      },
+      ["test_export.py"] = {
+        purpose = "Export functionality tests",
+        test_prefix = "T7",
+        depends_on = {"export/logger.py"}
+      },
+      ["test_clustering_kmeans.py"] = {
+        purpose = "K-means clustering tests",
+        test_prefix = "T8",
+        depends_on = {"core/clustering.py"},
+        status = "DEVELOPING"
+      },
+      ["test_anchor_vector_display.py"] = {
+        purpose = "Anchor vector display tests",
+        test_prefix = "T9",
+        depends_on = {"ui/charts.py"},
+        status = "DEVELOPING"
+      },
+      ["test_cluster_visualization.py"] = {
+        purpose = "Cluster visualization tests",
+        test_prefix = "T10",
+        depends_on = {"ui/charts.py", "core/clustering.py"},
+        status = "DEVELOPING"
       }
     },
     status = "COMPLETE"

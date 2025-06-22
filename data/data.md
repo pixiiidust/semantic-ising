@@ -329,10 +329,17 @@ Data files have comprehensive validation:
 
 ### Memory Optimization
 - **Large simulation support**: Snapshots stored on disk instead of memory for simulations with many temperature steps
-- **Efficient retrieval**: Temperature slider in UI automatically loads snapshots from disk
-- **Automatic cleanup**: Old snapshot directories can be managed independently of core data
+- **Efficient retrieval**: Temperature-based loading reduces memory usage
+- **Hash-based organization**: Unique directory names prevent conflicts between different simulation configurations
+- **Metadata preservation**: Simulation parameters and timestamps stored with each snapshot
 
 ### Language Labeling Enhancement
 - **Fixed UMAP display**: Language labels in UMAP plots now show actual language codes
 - **Proper parameter passing**: Language codes correctly passed from concept files through simulation to snapshots
-- **Consistent labeling**: All visualization components now use consistent language codes 
+- **Consistent labeling**: All visualization components now use consistent language codes
+
+### Anchor Comparison Metrics Consistency
+- **Disk-based recalculation**: Fixed anchor comparison recalculation to properly handle disk-based snapshots when in-memory snapshots are not available
+- **Original anchor vector preservation**: Both main metrics and interactive metrics now use original anchor vectors for comparison, not evolved ones
+- **Session state synchronization**: All UI components display consistent metrics by updating session state after recalculation
+- **Consistent calculation method**: Anchor comparison metrics are now calculated consistently across all UI components 

@@ -12,6 +12,8 @@ import streamlit as st
 from matplotlib import cm
 from matplotlib.colors import Normalize
 from scipy.stats import linregress
+from core.clustering import cluster_vectors_kmeans, cluster_vectors, ising_compatible_clustering
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,7 @@ LANGUAGE_NAMES = {
     'am': 'Amharic',
     'ar': 'Arabic',
     'az': 'Azerbaijani',
+    'as': 'Assamese',
     'be': 'Belarusian',
     'bg': 'Bulgarian',
     'bn': 'Bengali',
@@ -154,11 +157,15 @@ def plot_entropy_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figure
         elif hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
             tc = st.session_state.critical_temperature
         if tc is not None:
+            try:
+                tc_formatted = f"Tc = {float(tc):.3f}"
+            except (ValueError, TypeError):
+                tc_formatted = f"Tc = {tc}"
             fig.add_vline(
                 x=tc,
                 line_dash="dash",
                 line_color="red",
-                annotation_text=f"Tc = {tc:.3f}",
+                annotation_text=tc_formatted,
                 annotation_position="top right"
             )
         
@@ -224,322 +231,143 @@ def interpolate_vectors_at_temperature(vector_snapshots: Dict[float, np.ndarray]
     return None
 
 
-def plot_full_umap_projection(simulation_results: Dict[str, Any], 
-                               analysis_results: Dict[str, Any], 
-                               anchor_language: Optional[str] = None, 
-                               include_anchor: bool = False,
-                               selected_temperature: Optional[float] = None) -> go.Figure:
+def plot_full_umap_projection(
+    vectors_at_temp: np.ndarray, 
+    dynamics_languages: List[str],
+    analysis_results: Dict[str, Any],
+    anchor_language: Optional[str] = None, 
+    include_anchor: bool = False,
+    target_temp: Optional[float] = None
+) -> go.Figure:
     """
-    Plot full UMAP projection of vectors at Tc (or closest available snapshot).
-    If no snapshots, fallback to dynamics_vectors.
-    Highlights anchor language and meta-vector if provided.
+    Plot full UMAP projection with Ising-compatible clustering.
+    Clustering is performed in spin space (768D), UMAP is only for visualization.
     """
     try:
-        tc = analysis_results.get('critical_temperature')
-        vector_snapshots = simulation_results.get('vector_snapshots', {})
-        snapshot_dir = simulation_results.get('snapshot_directory')
-        available_snapshot_temps = simulation_results.get('available_snapshot_temperatures', [])
-        languages = simulation_results.get('languages', [f'Lang_{i}' for i in range(len(simulation_results.get('dynamics_vectors', [])))])
-        
-        # Debug logging
-        logger.info(f"Initial languages from simulation_results: {languages}")
-        logger.info(f"Snapshot directory: {snapshot_dir}")
-        logger.info(f"Available snapshot temps: {available_snapshot_temps}")
-        
-        target_temp = selected_temperature if selected_temperature is not None else tc
-        
-        tc_vectors = None
-        used_temp = None
-        interpolation_used = False
-        
-        # If a specific temperature is selected, find the closest snapshot
-        if selected_temperature is not None:
-            if snapshot_dir and available_snapshot_temps:
-                # Load from disk
-                from core.simulation import _load_snapshot_from_disk
-                snapshot_data = _load_snapshot_from_disk(snapshot_dir, selected_temperature)
-                if snapshot_data:
-                    tc_vectors = snapshot_data['vectors']
-                    used_temp = snapshot_data['temperature']
-                    languages = snapshot_data['languages']
-                    logger.info(f"Loaded languages from snapshot at T={selected_temperature}: {languages}")
-                    interpolation_used = True
-            elif vector_snapshots:
-                # Fallback to memory-based snapshots
-                available_temps = list(vector_snapshots.keys())
-                if available_temps:
-                    closest_temp = min(available_temps, key=lambda t: abs(t - selected_temperature))
-                    tc_vectors = vector_snapshots[closest_temp]
-                    used_temp = closest_temp
-        # If no temperature is selected, use the original logic (interpolation/closest to Tc)
-        elif tc is not None:
-            if snapshot_dir and available_snapshot_temps:
-                # Load from disk
-                from core.simulation import _load_snapshot_from_disk
-                snapshot_data = _load_snapshot_from_disk(snapshot_dir, tc)
-                if snapshot_data:
-                    tc_vectors = snapshot_data['vectors']
-                    used_temp = snapshot_data['temperature']
-                    languages = snapshot_data['languages']
-                    logger.info(f"Loaded languages from snapshot at T={tc}: {languages}")
-                    interpolation_used = True
-            elif vector_snapshots and len(vector_snapshots) >= 2:
-                tc_vectors = interpolate_vectors_at_temperature(vector_snapshots, tc)
-                if tc_vectors is not None:
-                    used_temp = tc
-                    interpolation_used = True
-            
-            if tc_vectors is None and vector_snapshots:
-                available_temps = list(vector_snapshots.keys())
-                if available_temps:
-                    closest_temp = min(available_temps, key=lambda t: abs(t - tc))
-                    tc_vectors = vector_snapshots[closest_temp]
-                    used_temp = closest_temp
+        if vectors_at_temp is None or vectors_at_temp.shape[0] == 0:
+            st.warning(f"No vector data provided for temperature {target_temp:.3f}.")
+            return go.Figure()
 
-        # Fallback to initial embeddings if no other vectors are found
-        if tc_vectors is None:
-            tc_vectors = simulation_results.get('dynamics_vectors', None)
-            used_temp = target_temp # Can be Tc or selected temp
-            
-        if tc_vectors is None:
-            st.warning("No vectors available to generate UMAP plot.")
-            return go.Figure()
-        
-        # Compute meta-vector from multilingual set
-        from core.meta_vector import compute_meta_vector
-        meta_result = compute_meta_vector(tc_vectors, method="centroid")
-        meta_vector = meta_result['meta_vector']
-        
-        # Prepare vectors for UMAP projection
-        anchor_vector = None  # Initialize anchor_vector
-        
-        if anchor_language and not include_anchor:
-            # Get anchor vector from the original embeddings
-            from core.embeddings import generate_embeddings
-            try:
-                # Get all embeddings including anchor using the same parameters as simulation
-                concept = simulation_results.get('concept', 'dog')
-                encoder = simulation_results.get('encoder', 'LaBSE')
-                
-                # Try to get the filename from session state if available
-                filename = None
-                if hasattr(st, 'session_state') and hasattr(st.session_state, 'concept_info'):
-                    filename = st.session_state.concept_info.get('filename')
-                
-                logger.info(f"Retrieving anchor vector for {anchor_language} from {concept} with {encoder}, filename: {filename}")
-                
-                all_embeddings, all_languages = generate_embeddings(concept, encoder, filename)
-                anchor_idx = all_languages.index(anchor_language)
-                anchor_vector = all_embeddings[anchor_idx:anchor_idx+1]  # Keep 2D shape
-                
-                logger.info(f"Successfully retrieved anchor vector for {anchor_language} at index {anchor_idx}")
-                
-                # Combine vectors for UMAP: dynamics vectors + meta-vector + anchor vector
-                all_vectors = np.vstack([tc_vectors, meta_vector.reshape(1, -1), anchor_vector])
-            except Exception as e:
-                logger.warning(f"Failed to retrieve anchor vector for {anchor_language}: {e}")
-                # Fallback: just use dynamics vectors + meta-vector
-                all_vectors = np.vstack([tc_vectors, meta_vector.reshape(1, -1)])
-                anchor_vector = None
+        # Perform UMAP projection for visualization only
+        from umap import UMAP
+        if vectors_at_temp.shape[0] > 2:
+            n_neighbors = min(15, vectors_at_temp.shape[0] - 1)
+            umap_model = UMAP(n_neighbors=n_neighbors, min_dist=0.1, n_components=2, random_state=42)
+            projected_vectors = umap_model.fit_transform(vectors_at_temp)
         else:
-            # Combine vectors for UMAP projection: language vectors + meta-vector
-            all_vectors = np.vstack([tc_vectors, meta_vector.reshape(1, -1)])
-            # Note: anchor_vector remains None for included case (will be extracted from dynamics later)
+            projected_vectors = np.random.rand(vectors_at_temp.shape[0], 2) # Fallback
+
+        # ISING-COMPATIBLE CLUSTERING: Cluster in spin space (768D)
+        from core.clustering import ising_compatible_clustering
         
-        # Perform UMAP projection on all vectors
-        try:
-            import umap
-            reducer = umap.UMAP(n_components=2, random_state=42, n_neighbors=15, min_dist=0.1)
-            coords = reducer.fit_transform(all_vectors)
-        except ImportError:
-            return go.Figure()
+        # Use temperature for adaptive thresholding
+        temp_for_clustering = target_temp if target_temp is not None else 1.0
         
-        # Separate coordinates for language vectors, meta-vector, and anchor vector (if present)
-        if anchor_vector is not None:
-            # Format: [language_vectors, meta_vector, anchor_vector]
-            language_coords = coords[:-2]  # All except last two
-            meta_coords = coords[-2]       # Second to last is meta-vector
-            anchor_coords = coords[-1]     # Last one is anchor vector
-            logger.info(f"UMAP projection: {len(language_coords)} language vectors + meta-vector + anchor vector")
-        else:
-            # Format: [language_vectors, meta_vector]
-            language_coords = coords[:-1]  # All except last
-            meta_coords = coords[-1]       # Last one is meta-vector
-            anchor_coords = None
-            logger.info(f"UMAP projection: {len(language_coords)} language vectors + meta-vector (no anchor)")
+        # Get critical temperature from analysis results or session state
+        critical_temperature = None
+        if analysis_results and 'critical_temperature' in analysis_results:
+            critical_temperature = analysis_results['critical_temperature']
+        elif hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
+            critical_temperature = st.session_state.critical_temperature
         
-        # If anchor is included in dynamics, find its position and highlight it
-        if include_anchor and anchor_language and anchor_coords is None:
-            try:
-                # Find the anchor language index in the dynamics languages
-                anchor_idx = languages.index(anchor_language)
-                if anchor_idx < len(language_coords):
-                    # Extract anchor coordinates from language coordinates
-                    anchor_coords = language_coords[anchor_idx]
-                    # Remove anchor from language coordinates to avoid duplication
-                    language_coords = np.vstack([language_coords[:anchor_idx], language_coords[anchor_idx+1:]])
-                    # Remove anchor from languages list
-                    languages = languages[:anchor_idx] + languages[anchor_idx+1:]
-            except (ValueError, IndexError) as e:
-                logger.warning(f"Could not find anchor language {anchor_language} in dynamics: {e}")
-                anchor_coords = None
-        
-        # Adjust languages if needed
-        if len(languages) != len(language_coords):
-            warning_msg = f"[Warning: {len(languages)} language codes, {len(language_coords)} vectors. Showing generic labels.]"
-            languages = [f'Lang_{i}' for i in range(len(language_coords))]
-            logger.warning(f"Language code mismatch: {len(languages)} codes vs {len(language_coords)} vectors")
-        else:
-            warning_msg = None
-            logger.info(f"Using {len(languages)} language codes for {len(language_coords)} vectors")
-        
-        # Final debug logging
-        logger.info(f"Final languages for plotting: {languages}")
-        logger.info(f"Number of language coordinates: {len(language_coords)}")
-        
-        # Prepare hover texts with language code and name
-        hover_texts = [
-            f"{code} = {LANGUAGE_NAMES.get(code, 'Unknown')}" for code in languages
-        ]
-        
-        # Create scatter plot with anchor language and meta-vector highlighting
-        fig = go.Figure()
-        
-        # Plot all language vectors first (these are the dynamics languages)
-        fig.add_trace(go.Scatter(
-            x=language_coords[:, 0],
-            y=language_coords[:, 1],
-            mode='markers+text',
-            name='Multilingual Set',
-            text=languages,
-            textposition="top center",
-            marker=dict(
-                size=10,
-                color='#636EFA',
-                line=dict(width=1, color='white')
-            ),
-            customdata=hover_texts,
-            hovertemplate='<b>%{text}</b><br>%{customdata}<br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
-        ))
-        
-        # Plot meta-vector as red circle
-        fig.add_trace(go.Scatter(
-            x=[meta_coords[0]],
-            y=[meta_coords[1]],
-            mode='markers+text',
-            name='Meta-Vector',
-            text=['Meta'],
-            textposition="top center",
-            marker=dict(
-                size=15,
-                color='#FF6B6B',
-                line=dict(width=2, color='white'),
-                symbol='circle'
-            ),
-            customdata=['Meta-Vector (centroid of multilingual set)'],
-            hovertemplate='<b>Meta-Vector</b><br>Centroid of multilingual set<br>x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
-        ))
-        
-        # Plot anchor vector if present (excluded case)
-        if anchor_coords is not None:
-            # Determine if anchor is included or excluded
-            if include_anchor:
-                anchor_status = "included in multilingual set"
-                anchor_title = f"{anchor_language} (Anchor - Included)"
-            else:
-                anchor_status = "excluded from multilingual set"
-                anchor_title = f"{anchor_language} (Anchor - Excluded)"
-            
-            logger.info(f"Plotting anchor vector for {anchor_language}: {anchor_status} at coordinates {anchor_coords}")
-                
-            fig.add_trace(go.Scatter(
-                x=[anchor_coords[0]],
-                y=[anchor_coords[1]],
-                mode='markers+text',
-                name=f'Anchor ({anchor_language})',
-                text=[anchor_language],
-                textposition="top center",
-                marker=dict(
-                    size=15,
-                    color='#FFD600',  # Changed to yellow
-                    line=dict(width=2, color='white'),
-                    symbol='diamond'  # Different symbol to distinguish from meta-vector
-                ),
-                customdata=[f'{anchor_language} = {LANGUAGE_NAMES.get(anchor_language, "Unknown")} ({anchor_status})'],
-                hovertemplate=f'<b>{anchor_title}</b><br>{anchor_status}<br>x: %{{x:.3f}}<br>y: %{{y:.3f}}<extra></extra>'
-            ))
-        else:
-            logger.info(f"No anchor coordinates available for {anchor_language} (include_anchor={include_anchor})")
-        
-        # Update layout with appropriate title
-        if selected_temperature is not None:
-            title = f"UMAP Projection at T = {used_temp:.3f} (selected)"
-        elif interpolation_used:
-            title = f"UMAP Projection at T = {used_temp:.3f} (interpolated at Tc)"
-        else:
-            title = f"UMAP Projection at T = {used_temp:.3f} (closest to Tc)"
-        
-        # Add anchor language info to title
-        if anchor_language:
-            if include_anchor:
-                title += f" - {anchor_language} included in multilingual set"
-            else:
-                title += f" - {anchor_language} excluded from multilingual set (shown separately)"
-        if warning_msg:
-            title += f"<br>{warning_msg}"
-        
-        # Calculate auto-scaled range and zoom out by 3 steps
-        all_coords = []
-        if len(language_coords) > 0:
-            all_coords.extend(language_coords)
-        if meta_coords is not None:
-            all_coords.append(meta_coords)
-        if anchor_coords is not None:
-            all_coords.append(anchor_coords)
-        
-        if all_coords:
-            all_coords = np.array(all_coords)
-            x_min, x_max = all_coords[:, 0].min(), all_coords[:, 0].max()
-            y_min, y_max = all_coords[:, 1].min(), all_coords[:, 1].max()
-            
-            # Calculate center and range
-            x_center = (x_min + x_max) / 2
-            y_center = (y_min + y_max) / 2
-            x_range = x_max - x_min
-            y_range = y_max - y_min
-            
-            # Zoom out by expanding range by 100% (3 zoom-out steps)
-            zoom_factor = 2.0
-            x_range_expanded = x_range * zoom_factor
-            y_range_expanded = y_range * zoom_factor
-            
-            # Set expanded ranges
-            x_range_final = [x_center - x_range_expanded/2, x_center + x_range_expanded/2]
-            y_range_final = [y_center - y_range_expanded/2, y_center + y_range_expanded/2]
-        else:
-            # Fallback to default range if no coordinates
-            x_range_final = [-1.2, 1.2]
-            y_range_final = [-1.2, 1.2]
-        
-        fig.update_layout(
-            title=title,
-            xaxis_title="UMAP 1",
-            yaxis_title="UMAP 2",
-            template="plotly_dark",
-            showlegend=True,
-            hovermode='closest',
-            height=600,  # Make chart taller
-            width=800,   # Set reasonable width
-            margin=dict(l=50, r=50, t=80, b=50),  # Adjust margins for better proportions
-            xaxis=dict(range=x_range_final),  # Auto-scaled then zoomed out
-            yaxis=dict(range=y_range_final)   # Auto-scaled then zoomed out
+        # Perform clustering in original vector space (spin space)
+        clustering_result = ising_compatible_clustering(
+            vectors_at_temp, 
+            temperature=temp_for_clustering,
+            critical_temperature=critical_temperature,
+            min_cluster_size=2  # Use minimum cluster size of 2 for meaningful clusters
         )
         
-        return fig
+        # Extract cluster labels from spin space clustering
+        cluster_labels = clustering_result['cluster_labels']
+        n_clusters = clustering_result['n_clusters']
+        cluster_entropy = clustering_result['cluster_entropy']
+        largest_cluster_size = clustering_result['largest_cluster_size']
+        threshold_used = clustering_result['threshold']
         
+        print(f"DEBUG: Ising clustering complete - {n_clusters} clusters, entropy: {cluster_entropy:.3f}, largest: {largest_cluster_size}, threshold: {threshold_used:.3f}")
+
+        # Prepare data for plotting (color by spin space clusters)
+        df = pd.DataFrame(projected_vectors, columns=['UMAP 1', 'UMAP 2'])
+        df['language'] = dynamics_languages
+        df['language_name'] = [LANGUAGE_NAMES.get(lang, lang) for lang in dynamics_languages]
+        df['cluster'] = [f'Cluster {c+1}' for c in cluster_labels]
+
+        # Create scatter plot colored by spin space clusters
+        fig = px.scatter(
+            df, x='UMAP 1', y='UMAP 2', color='cluster', text='language',
+            hover_name='language_name',
+            hover_data={'UMAP 1': ':.3f', 'UMAP 2': ':.3f', 'cluster': True, 'language': False},
+            title=f"UMAP Projection at T = {target_temp:.3f} (Spin Space Clusters)"
+        )
+        fig.update_traces(textposition='top center', marker=dict(size=12))
+        
+        # Add cluster statistics to the plot
+        cluster_info = f"Clusters: {n_clusters} | Entropy: {cluster_entropy:.3f} | Largest: {largest_cluster_size} | Threshold: {threshold_used:.3f}"
+        fig.add_annotation(
+            text=cluster_info,
+            xref="paper", yref="paper",
+            x=0.02, y=0.98,
+            showarrow=False,
+            font=dict(size=10, color="white"),
+            bgcolor="rgba(0,0,0,0.1)",
+            bordercolor="gray",
+            borderwidth=1
+        )
+        
+        # Add Meta-Vector (Note: meta_vector and anchor_vector are not part of UMAP fitting)
+        meta_vector = analysis_results.get('meta_vector_at_tc')
+        if meta_vector is not None and 'umap_model' in locals():
+            try:
+                projected_meta = umap_model.transform(meta_vector.reshape(1, -1))
+                fig.add_trace(go.Scatter(
+                    x=projected_meta[:, 0], y=projected_meta[:, 1],
+                    mode='markers+text', text=["Meta"], textposition="bottom center",
+                    marker=dict(symbol='star', color='red', size=18, line=dict(width=1, color='white')),
+                    name='Meta-Vector'
+                ))
+            except Exception as e:
+                logger.warning(f"Could not transform meta-vector for plotting: {e}")
+
+        # Add Anchor Vector - FIXED: Get from session state directly
+        anchor_vector = None
+        if hasattr(st, 'session_state') and hasattr(st.session_state, 'simulation_results'):
+            anchor_vector = st.session_state.simulation_results.get('anchor_vector')
+        
+        # Debug anchor vector retrieval
+        print(f"DEBUG: anchor_vector found: {anchor_vector is not None}")
+        print(f"DEBUG: include_anchor: {include_anchor}")
+        print(f"DEBUG: anchor_language: {anchor_language}")
+        
+        if anchor_vector is not None and anchor_language and 'umap_model' in locals():
+            try:
+                # Handle both single vector and array of vectors
+                if anchor_vector.ndim == 1:
+                    anchor_vector = anchor_vector.reshape(1, -1)
+                elif anchor_vector.ndim > 2:
+                    anchor_vector = anchor_vector.reshape(1, -1)
+                
+                projected_anchor = umap_model.transform(anchor_vector)
+                fig.add_trace(go.Scatter(
+                    x=projected_anchor[:, 0], y=projected_anchor[:, 1],
+                    mode='markers+text', text=[anchor_language.upper()], textposition="bottom center",
+                    marker=dict(symbol='star', color='yellow', size=18, line=dict(width=1, color='white')),
+                    name=f'Anchor ({anchor_language.upper()})'
+                ))
+                print(f"DEBUG: Anchor vector added successfully")
+            except Exception as e:
+                logger.warning(f"Could not transform anchor vector for plotting: {e}")
+                print(f"DEBUG: Anchor vector transformation failed: {e}")
+
+        fig.update_layout(template="plotly_dark", legend_title_text='Spin Space Clusters')
+        return fig
+
     except Exception as e:
-        logger.error(f"Error creating UMAP projection: {e}")
-        return go.Figure()
+        logger.error(f"Error creating full UMAP projection: {e}", exc_info=True)
+        fig = go.Figure()
+        fig.update_layout(title="Error Generating UMAP Plot", template="plotly_dark")
+        fig.add_annotation(text=f"An error occurred: {e}", showarrow=False)
+        return fig
 
 
 def plot_correlation_decay(analysis_results: Dict[str, Any]) -> go.Figure:
@@ -667,11 +495,15 @@ def plot_correlation_length_vs_temperature(simulation_results: Dict[str, Any]) -
         elif hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
             tc = st.session_state.critical_temperature
         if tc is not None:
+            try:
+                tc_formatted = f"Tc = {float(tc):.3f}"
+            except (ValueError, TypeError):
+                tc_formatted = f"Tc = {tc}"
             fig.add_vline(
                 x=tc,
                 line_dash="dash",
                 line_color="red",
-                annotation_text=f"Tc = {tc:.3f}",
+                annotation_text=tc_formatted,
                 annotation_position="top right"
             )
         
@@ -752,6 +584,14 @@ def plot_alignment_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figu
                     colors[i] = 'blue'
         
         # Plot alignment curve
+        # Safely format text for hover
+        text_array = []
+        for t, a in zip(valid_temps, valid_align):
+            try:
+                text_array.append(f"T={float(t):.3f}<br>Alignment={float(a):.4f}")
+            except (ValueError, TypeError):
+                text_array.append(f"T={t}<br>Alignment={a}")
+        
         fig.add_trace(go.Scatter(
             x=valid_temps,
             y=valid_align,
@@ -763,7 +603,7 @@ def plot_alignment_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figu
                 color=colors,
                 line=dict(width=1, color='black')
             ),
-            text=[f"T={t:.3f}<br>Alignment={a:.4f}" for t, a in zip(valid_temps, valid_align)],
+            text=text_array,
             hovertemplate='<b>%{text}</b><extra></extra>'
         ))
         
@@ -774,11 +614,15 @@ def plot_alignment_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figu
         elif hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
             tc = st.session_state.critical_temperature
         if tc is not None:
+            try:
+                tc_formatted = f"Tc = {float(tc):.3f}"
+            except (ValueError, TypeError):
+                tc_formatted = f"Tc = {tc}"
             fig.add_vline(
                 x=tc,
                 line_dash="dash",
                 line_color="red",
-                annotation_text=f"Tc = {tc:.3f}",
+                annotation_text=tc_formatted,
                 annotation_position="top right"
             )
         
@@ -850,11 +694,15 @@ def plot_energy_vs_temperature(simulation_results: Dict[str, Any]) -> go.Figure:
         elif hasattr(st, 'session_state') and hasattr(st.session_state, 'critical_temperature'):
             tc = st.session_state.critical_temperature
         if tc is not None:
+            try:
+                tc_formatted = f"Tc = {float(tc):.3f}"
+            except (ValueError, TypeError):
+                tc_formatted = f"Tc = {tc}"
             fig.add_vline(
                 x=tc,
                 line_dash="dash",
                 line_color="red",
-                annotation_text=f"Tc = {tc:.3f}",
+                annotation_text=tc_formatted,
                 annotation_position="top right"
             )
         
@@ -926,6 +774,14 @@ def plot_convergence_summary(convergence_data: List[Dict[str, Any]], tc: float =
         else:
             colors.append('gray')
     
+    # Safely format text for hover
+    text_array = []
+    for t, s, i, d in zip(temperatures, statuses, iterations, final_diffs):
+        try:
+            text_array.append(f"T={float(t):.3f}<br>Status: {s}<br>Iterations: {i}<br>Final diff: {float(d):.2e}")
+        except (ValueError, TypeError):
+            text_array.append(f"T={t}<br>Status: {s}<br>Iterations: {i}<br>Final diff: {d}")
+    
     fig.add_trace(go.Scatter(
         x=temperatures,
         y=final_diffs,
@@ -935,8 +791,7 @@ def plot_convergence_summary(convergence_data: List[Dict[str, Any]], tc: float =
             color=colors,
             line=dict(width=1, color='black')
         ),
-        text=[f"T={t:.3f}<br>Status: {s}<br>Iterations: {i}<br>Final diff: {d:.2e}" 
-              for t, s, i, d in zip(temperatures, statuses, iterations, final_diffs)],
+        text=text_array,
         hovertemplate='<b>%{text}</b><extra></extra>',
         name='Convergence Summary'
     ))
@@ -944,7 +799,11 @@ def plot_convergence_summary(convergence_data: List[Dict[str, Any]], tc: float =
     # Remove the horizontal convergence threshold line
     # Add vertical Tc line if provided
     if tc is not None:
-        fig.add_vline(x=tc, line_dash="dash", line_color="red", annotation_text=f"Tc = {tc:.3f}", annotation_position="top left")
+        try:
+            tc_formatted = f"Tc = {float(tc):.3f}"
+        except (ValueError, TypeError):
+            tc_formatted = f"Tc = {tc}"
+        fig.add_vline(x=tc, line_dash="dash", line_color="red", annotation_text=tc_formatted, annotation_position="top left")
     
     layout_kwargs = {
         "title": "Convergence Summary Across Temperatures",
@@ -1451,3 +1310,114 @@ def plot_power_law_aggregate(simulation_results: Dict[str, Any]) -> go.Figure:
             bgcolor='rgba(0,0,0,0.7)'
         )
     return fig 
+
+def plot_cluster_evolution(cluster_evolution_data: List[Dict[str, Any]]) -> go.Figure:
+    """
+    Plot cluster evolution over temperature - the phase transition signature.
+    
+    Args:
+        cluster_evolution_data: List of cluster evolution data from track_cluster_evolution()
+        
+    Returns:
+        plotly.graph_objects.Figure: Interactive cluster evolution plot
+    """
+    try:
+        if not cluster_evolution_data:
+            logger.warning("No cluster evolution data provided")
+            return go.Figure()
+        
+        # Extract data
+        temperatures = [data['temperature'] for data in cluster_evolution_data]
+        n_clusters = [data['n_clusters'] for data in cluster_evolution_data]
+        cluster_entropy = [data['cluster_entropy'] for data in cluster_evolution_data]
+        largest_cluster_size = [data['largest_cluster_size'] for data in cluster_evolution_data]
+        thresholds = [data['threshold'] for data in cluster_evolution_data]
+        
+        # Create subplot figure
+        fig = go.Figure()
+        
+        # Add traces for different metrics
+        fig.add_trace(go.Scatter(
+            x=temperatures,
+            y=n_clusters,
+            mode='lines+markers',
+            name='Number of Clusters',
+            line=dict(color='#1f77b4', width=2),
+            marker=dict(size=6),
+            yaxis='y'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=temperatures,
+            y=cluster_entropy,
+            mode='lines+markers',
+            name='Cluster Entropy',
+            line=dict(color='#ff7f0e', width=2),
+            marker=dict(size=6),
+            yaxis='y2'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=temperatures,
+            y=largest_cluster_size,
+            mode='lines+markers',
+            name='Largest Cluster Size',
+            line=dict(color='#2ca02c', width=2),
+            marker=dict(size=6),
+            yaxis='y3'
+        ))
+        
+        # Add threshold line
+        fig.add_trace(go.Scatter(
+            x=temperatures,
+            y=thresholds,
+            mode='lines',
+            name='Adaptive Threshold',
+            line=dict(color='#d62728', width=1, dash='dash'),
+            yaxis='y4'
+        ))
+        
+        # Update layout with multiple y-axes
+        fig.update_layout(
+            title="Cluster Evolution Over Temperature (Phase Transition Signature)",
+            xaxis_title="Temperature",
+            template="plotly_dark",
+            showlegend=True,
+            hovermode='x unified',
+            yaxis=dict(
+                title="Number of Clusters",
+                titlefont=dict(color="#1f77b4"),
+                tickfont=dict(color="#1f77b4"),
+                side="left"
+            ),
+            yaxis2=dict(
+                title="Cluster Entropy",
+                titlefont=dict(color="#ff7f0e"),
+                tickfont=dict(color="#ff7f0e"),
+                side="right",
+                overlaying="y",
+                position=0.05
+            ),
+            yaxis3=dict(
+                title="Largest Cluster Size",
+                titlefont=dict(color="#2ca02c"),
+                tickfont=dict(color="#2ca02c"),
+                side="right",
+                overlaying="y",
+                position=0.15
+            ),
+            yaxis4=dict(
+                title="Adaptive Threshold",
+                titlefont=dict(color="#d62728"),
+                tickfont=dict(color="#d62728"),
+                side="right",
+                overlaying="y",
+                position=0.25
+            )
+        )
+        
+        return fig
+        
+    except Exception as e:
+        logger.error(f"Error creating cluster evolution plot: {e}")
+        return go.Figure() 

@@ -61,16 +61,30 @@ For a deeper dive and visualizing the concepts behind this simulator, see the [S
 
 ### Visualize multilingual concept mappings
 <img src="https://github.com/user-attachments/assets/3c0ce8c2-2c13-487e-b923-817150e912ec"/>
-
-### Identify critical thresholds from converging, multilignual concept alignments
-<img src="https://github.com/user-attachments/assets/8b658837-fceb-4505-910a-483db73f8d0f" width="100%"/>
-
-### Configuration Sidebar
-<img src="https://github.com/user-attachments/assets/930b3b43-a08d-4e61-adfd-711528d28f0e" width="40%"/>
+### Visualize multilingual concept mappings
+<img src="https://github.com/user-attachments/assets/3c0ce8c2-2c13-487e-b923-817150e912ec"/>
 
 ---
 
 ## 🚀 Quick Start
+
+### 0. (Recommended) Create a Python Virtual Environment
+
+It is strongly recommended to use a virtual environment to avoid dependency conflicts.
+
+#### Windows (PowerShell):
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+#### macOS/Linux:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+See [SETUP.md](SETUP.md) for detailed instructions and troubleshooting.
 
 ### 1. Install Dependencies
 
@@ -242,9 +256,9 @@ This tool applies a continuous, semantic variant of the Ising model using multil
 
 ### Phase Transition Detection
 
-- The simulator now detects the critical temperature (Tc) using the log(ξ) derivative method.
+- The simulator detects the critical temperature (Tc) using the log(ξ) derivative method.
 - Tc is estimated by identifying temperature where the correlation length (ξ) collapses (the "knee" in the plot).
-- This is more robust and physically meaningful than previous Binder cumulant methods (All UI and analysis now annotate Tc at the knee, matching physical expectations.)
+- This provides a robust and physically meaningful detection of phase transitions.
 
 ---
 
@@ -255,6 +269,10 @@ This tool applies a continuous, semantic variant of the Ising model using multil
 - **Language Code Preservation**: Fixed UMAP language labels to show actual language codes (en, es, fr, etc.) instead of generic labels
 - **Enhanced Metrics Display**: Three-column layout with Critical Temperature, Cosine Distance, and Cosine Similarity prominently displayed
 - **Memory Optimization**: Temperature-based snapshot loading reduces memory usage for large simulations
+- **Anchor Comparison Metrics Fix**: Resolved inconsistency between main comparison metrics and interactive metrics by ensuring both use original anchor vectors for comparison
+- **Disk-based Recalculation**: Fixed anchor comparison recalculation to properly handle disk-based snapshots when in-memory snapshots are not available
+- **Consistent Metrics Display**: All UI components now display consistent cosine similarity and distance metrics at the critical temperature
+- **Technical Debt Reduction**: Removed outdated references to unimplemented features (mBERT, XLM-R, Binder cumulant method, linguistic distance weighting)
 
 ---
 

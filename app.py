@@ -11,6 +11,10 @@ import os, types, sys
 os.environ.setdefault("STREAMLIT_WATCHER_TYPE", "watchdog")
 # 2) Set environment variable to prevent PyTorch introspection issues
 os.environ.setdefault("PYTORCH_JIT", "0")
+# 3) Disable PyTorch custom class introspection that causes Streamlit watcher issues
+os.environ.setdefault("TORCH_DISABLE_CUSTOM_CLASSES", "1")
+# 4) Set PyTorch to CPU-only mode to avoid device issues
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
 
 import streamlit as st
 import numpy as np
@@ -49,6 +53,8 @@ from core.simulation import run_temperature_sweep, simulate_at_temperature
 from core.phase_detection import find_critical_temperature
 from core.post_analysis import analyze_simulation_results
 from core.temperature_estimation import estimate_practical_range
+
+# Import existing UI modules
 from ui.charts import plot_entropy_vs_temperature, plot_full_umap_projection, plot_correlation_decay, plot_correlation_length_vs_temperature
 from ui.components import render_anchor_config, render_experiment_description, render_simulation_progress, render_metrics_summary, render_critical_temperature_display, render_anchor_comparison_summary, render_export_buttons, render_error_message, render_success_message, render_warning_message, render_concept_selection
 from ui.tabs.simulation import render_simulation_tab
@@ -125,9 +131,9 @@ def main():
             
             # Encoder selection
             encoder = st.selectbox(
-                "Embedding Model",
-                ["LaBSE", "mBERT (coming soon)", "XLM-R (coming soon)"],
-                help="Select the multilingual embedding model"
+                "Encoder Model",
+                ["LaBSE"],
+                help="LaBSE: Language-agnostic BERT Sentence Embedding for multilingual support"
             )
             
             # Anchor configuration
@@ -147,8 +153,8 @@ def main():
             # Checkbox for storing all temperature steps
             store_all_steps = st.checkbox(
                 "Store all steps for dynamic visualization",
-                value=False,
-                help="Saves the state at every temperature step. Required for the interactive UMAP slider, but uses more memory."
+                value=True,
+                help="✅ CHECKED (Recommended): Enables interactive UMAP visualization with temperature slider. Stores snapshots at all temperature steps for full exploration. Uses more memory but provides complete visualization experience. ❌ UNCHECKED: Limited to 10 snapshots maximum. Faster simulation but no interactive temperature selection in UMAP. Choose based on your preference for visualization vs performance."
             )
             
             if use_auto_estimate:
@@ -176,12 +182,16 @@ def main():
                     # Store in session state
                     st.session_state.estimated_range = (estimated_tmin, estimated_tmax)
                     
-                    # Show estimated range info
-                    st.info(f"""
-                    **Estimated Range:**
-                    - Min: {estimated_tmin:.3f}
-                    - Max: {estimated_tmax:.3f}
-                    """)
+                    # Display estimated range
+                    def safe_format_temp(temp):
+                        try:
+                            if temp is None:
+                                return 'N/A'
+                            return f"{float(temp):.3f}"
+                        except (ValueError, TypeError):
+                            return f"{temp}"
+                    
+                    st.info(f"Auto-estimated range: {safe_format_temp(estimated_tmin)} - {safe_format_temp(estimated_tmax)}")
                     
                     # Use estimated range for simulation
                     tmin = estimated_tmin
@@ -227,13 +237,80 @@ def main():
             # Create temperature range
             T_range = np.linspace(tmin, tmax, n_steps).tolist()
             
+            # Advanced simulation parameters
+            with st.expander("🔧 Advanced Simulation Parameters", expanded=False):
+                st.markdown("**Update Method:**")
+                update_method = st.selectbox(
+                    "Choose update method:",
+                    ["metropolis", "glauber"],
+                    index=0,
+                    help="Metropolis: Probabilistic acceptance. Glauber: Deterministic with temperature-dependent strength."
+                )
+                
+                st.markdown("**k-NN Constraints:**")
+                k_neighbors = st.slider(
+                    "Number of nearest neighbors (k):",
+                    min_value=3,
+                    max_value=15,
+                    value=15,
+                    help="Each vector only interacts with its k nearest neighbors. Higher k = more global interactions."
+                )
+                
+                st.markdown("**Noise Parameters:**")
+                noise_sigma = st.slider(
+                    "Noise sigma:",
+                    min_value=0.01,
+                    max_value=0.1,
+                    value=0.04,
+                    step=0.01,
+                    help="Standard deviation of noise for Metropolis updates. Higher = more exploration."
+                )
+                
+                st.markdown("**Convergence Parameters:**")
+                max_iterations = st.slider(
+                    "Max iterations per temperature:",
+                    min_value=1000,
+                    max_value=10000,
+                    value=6000,
+                    step=1000,
+                    help="Maximum iterations for convergence at each temperature."
+                )
+                
+                convergence_threshold = st.slider(
+                    "Convergence threshold:",
+                    min_value=1e-4,
+                    max_value=1e-2,
+                    value=3e-3,
+                    format="%.0e",
+                    help="Threshold for considering simulation converged."
+                )
+                
+                similarity_threshold = st.slider(
+                    "Clustering similarity threshold:",
+                    min_value=0.5,
+                    max_value=0.95,
+                    value=0.8,
+                    step=0.05,
+                    help="Threshold for grouping vectors into clusters."
+                )
+            
+            # Create simulation parameters dictionary
+            sim_params = {
+                'update_method': update_method,
+                'k_neighbors': k_neighbors,
+                'noise_sigma': noise_sigma,
+                'max_iterations': max_iterations,
+                'convergence_threshold': convergence_threshold,
+                'similarity_threshold': similarity_threshold
+            }
+            
             # Run simulation button
             if st.button("🚀 Run Simulation", help="Start the semantic Ising simulation"):
                 if test_mode:
                     # Create mock data for testing
                     create_mock_simulation_results(concept, encoder, T_range, anchor_language, include_anchor, concept_info)
                 else:
-                    run_simulation_workflow(concept, encoder, T_range, anchor_language, include_anchor, concept_info, store_all_steps, n_steps)
+                    run_simulation_workflow(concept, encoder, T_range, anchor_language, include_anchor, concept_info, store_all_steps, n_steps, sim_params)
         
         # Main content area
         tab1, tab2, tab3 = st.tabs([
@@ -252,6 +329,60 @@ def main():
             # Check if we have comparison data available
             if hasattr(st.session_state, 'analysis_results') and st.session_state.analysis_results:
                 comparison_metrics = st.session_state.analysis_results.get('anchor_comparison', {})
+                print(f"DEBUG: App.py - analysis_results keys: {list(st.session_state.analysis_results.keys())}")
+                print(f"DEBUG: App.py - anchor_comparison: {comparison_metrics}")
+                print(f"DEBUG: App.py - critical_temperature: {st.session_state.analysis_results.get('critical_temperature', 'Not found')}")
+                
+                # TEMPORARY FIX: Recalculate comparison metrics using the same method as interactive metrics
+                if hasattr(st.session_state, 'simulation_results') and st.session_state.simulation_results:
+                    print("DEBUG: App.py - Starting recalculation of comparison metrics")
+                    try:
+                        from core.comparison_metrics import compute_meta_vector
+                        from sklearn.metrics.pairwise import cosine_similarity
+                        
+                        simulation_results = st.session_state.simulation_results
+                        analysis_results = st.session_state.analysis_results
+                        tc = analysis_results.get('critical_temperature')
+                        print(f"DEBUG: App.py - Recalculation - tc: {tc}")
+                        
+                        if tc and 'vector_snapshots' in simulation_results:
+                            # Find closest temperature to Tc
+                            available_temps = list(simulation_results['vector_snapshots'].keys())
+                            closest_tc = min(available_temps, key=lambda t: abs(t - tc))
+                            vectors_at_tc = simulation_results['vector_snapshots'][closest_tc]
+                            print(f"DEBUG: App.py - Recalculation - using vectors at T={closest_tc}")
+                            
+                            # Calculate meta vector
+                            meta_result = compute_meta_vector(vectors_at_tc)
+                            meta_vector = meta_result['meta_vector']
+                            
+                            # Get anchor vector
+                            anchor_vector = None
+                            if hasattr(st.session_state, 'anchor_vectors') and st.session_state.anchor_vectors is not None:
+                                anchor_vector = st.session_state.anchor_vectors[0]
+                            elif 'anchor_vector' in simulation_results:
+                                anchor_vector = simulation_results['anchor_vector'][0]
+                            
+                            if anchor_vector is not None:
+                                # Calculate similarity
+                                recalculated_similarity = cosine_similarity([anchor_vector], [meta_vector])[0][0]
+                                recalculated_distance = 1 - recalculated_similarity
+                                
+                                print(f"DEBUG: App.py - RECALCULATED - Similarity: {recalculated_similarity:.4f}, Distance: {recalculated_distance:.4f}")
+                                
+                                # Update comparison_metrics with recalculated values
+                                comparison_metrics = {
+                                    'cosine_similarity': recalculated_similarity,
+                                    'cosine_distance': recalculated_distance,
+                                    'cos_anchor_meta_vector': recalculated_similarity,
+                                    'avg_cos_anchor_knn': recalculated_similarity  # Placeholder
+                                }
+                                
+                                print(f"DEBUG: App.py - Updated comparison_metrics: {comparison_metrics}")
+                    except Exception as e:
+                        print(f"DEBUG: App.py - Recalculation failed: {e}")
+                        import traceback
+                        traceback.print_exc()
                 
                 # Use actual languages from session state if available, otherwise fallback to hardcoded list
                 if hasattr(st.session_state, 'languages') and st.session_state.languages:
@@ -271,6 +402,8 @@ def main():
                     'dynamics_languages': dynamics_languages,
                     'comparison_languages': [anchor_language]
                 }
+                
+                # Use original anchor comparison tab
                 render_anchor_comparison_tab(comparison_metrics, experiment_config)
             else:
                 st.header("🔗 Anchor Language Comparison")
@@ -299,7 +432,8 @@ def run_simulation_workflow(concept: str,
                            include_anchor: bool,
                            concept_info: Dict[str, Any],
                            store_all_steps: bool,
-                           n_steps: int) -> None:
+                           n_steps: int,
+                           sim_params: dict) -> None:
     """
     Run the complete simulation workflow with progress tracking.
     
@@ -312,6 +446,7 @@ def run_simulation_workflow(concept: str,
         concept_info: Additional information about the concept
         store_all_steps: Whether to store all temperature steps
         n_steps: Number of temperature steps
+        sim_params: Simulation parameters
     """
     try:
         # Import simulation functions
@@ -429,7 +564,7 @@ def run_simulation_workflow(concept: str,
             store_all_temperatures=store_all_steps,
             max_snapshots=max_snapshots,
             n_sweeps_per_temperature=10,  # Use reasonable number of sweeps
-            sim_params=sim_params,
+            sim_params=sim_params,  # Pass the simulation parameters
             progress_callback=update_progress,
             snapshot_dir=snapshot_dir,
             concept=concept,
@@ -438,6 +573,9 @@ def run_simulation_workflow(concept: str,
             include_anchor=include_anchor,
             languages=dynamics_languages
         )
+        
+        # Add anchor vector to the results for plotting
+        simulation_results['anchor_vector'] = anchor_embeddings
         
         # Update status to show simulation completed
         elapsed_seconds = time.time() - simulation_start_time
@@ -492,18 +630,24 @@ def run_simulation_workflow(concept: str,
         status_text.text("Performing post-simulation analysis...")
         
         try:
-            analysis_results = analyze_simulation_results(simulation_results, anchor_embeddings, tc)
+            k_nn_value = sim_params.get('k_neighbors', 3)
+            print(f"DEBUG: App.py - About to call analyze_simulation_results with tc={tc}")
+            analysis_results = analyze_simulation_results(simulation_results, anchor_embeddings, tc, k_nn_value=k_nn_value)
+            print(f"DEBUG: App.py - analyze_simulation_results returned: {analysis_results}")
             
             # Analysis completed successfully
             if analysis_results and 'anchor_comparison' in analysis_results:
                 anchor_comparison = analysis_results['anchor_comparison']
+                print(f"DEBUG: App.py - anchor_comparison from analysis: {anchor_comparison}")
                 # Analysis results are available and valid
                 pass
             else:
                 st.warning("⚠️ Post-simulation analysis completed but no comparison results available.")
+                print(f"DEBUG: App.py - No anchor_comparison in analysis_results")
                 
         except Exception as e:
             st.error(f"❌ Post-simulation analysis failed: {str(e)}")
+            print(f"DEBUG: App.py - Post-simulation analysis failed: {e}")
             analysis_results = None
         
         # Step 7: Complete (100%)
@@ -529,11 +673,23 @@ def run_simulation_workflow(concept: str,
         st.session_state.include_anchor = include_anchor
         st.session_state.concept_info = concept_info  # Store concept_info for UMAP projection
         
+        print(f"DEBUG: App.py - Stored in session_state.analysis_results: {st.session_state.analysis_results}")
+        print(f"DEBUG: App.py - Stored in session_state.critical_temperature: {st.session_state.critical_temperature}")
+        
         # Clear progress indicators
         progress_bar.empty()
         status_text.empty()
         
-        st.success(f"✅ Simulation complete! (Elapsed: {total_elapsed_text})\nCritical temperature: {tc:.3f}")
+        def safe_format_tc(tc_value):
+            try:
+                if tc_value is None:
+                    return 'N/A'
+                return f"{float(tc_value):.3f}"
+            except (ValueError, TypeError):
+                return f"{tc_value}"
+        
+        st.success(f"✅ Simulation complete! (Elapsed: {total_elapsed_text})\nCritical temperature: {safe_format_tc(tc)}")
+        st.write(f"The system shows a phase transition at T = {safe_format_tc(tc)}, indicating the emergence of universal semantic structure.")
         
     except Exception as e:
         # Clear progress indicators on error
@@ -593,26 +749,41 @@ def render_overview_tab(concept: str,
             # Critical temperature insight
             if hasattr(st.session_state, 'critical_temperature'):
                 tc = st.session_state.critical_temperature
-                st.success(f"**Critical Temperature Detected:** {tc:.3f}")
-                st.write(f"The system shows a phase transition at T = {tc:.3f}, indicating the emergence of universal semantic structure.")
+                def safe_format_tc_overview(tc_value):
+                    try:
+                        if tc_value is None:
+                            return 'N/A'
+                        return f"{float(tc_value):.3f}"
+                    except (ValueError, TypeError):
+                        return f"{tc_value}"
+                
+                st.success(f"**Critical Temperature Detected:** {safe_format_tc_overview(tc)}")
+                st.write(f"The system shows a phase transition at T = {safe_format_tc_overview(tc)}, indicating the emergence of universal semantic structure.")
             
             # Anchor comparison insight
             if analysis_results and 'anchor_comparison' in analysis_results:
                 comparison = analysis_results['anchor_comparison']
                 cosine_similarity = comparison.get('cosine_similarity', 0.0)
                 
-                if cosine_similarity > 0.8:
+                def safe_format_similarity(sim_value):
+                    try:
+                        if sim_value is None:
+                            return 'N/A'
+                        return f"{float(sim_value):.3f}"
+                    except (ValueError, TypeError):
+                        return f"{sim_value}"
+                
+                if cosine_similarity > 0.7:
                     st.success("**Strong Semantic Convergence**")
-                    st.write(f"Cosine similarity of {cosine_similarity:.3f} indicates strong convergence between anchor and multilingual semantic structure.")
-                elif cosine_similarity > 0.6:
+                    st.write(f"Cosine similarity of {safe_format_similarity(cosine_similarity)} indicates strong convergence between anchor and multilingual semantic structure.")
+                elif cosine_similarity > 0.4:
                     st.warning("**Moderate Semantic Convergence**")
-                    st.write(f"Cosine similarity of {cosine_similarity:.3f} shows moderate convergence.")
+                    st.write(f"Cosine similarity of {safe_format_similarity(cosine_similarity)} shows moderate convergence.")
                 else:
                     st.error("**Weak Semantic Convergence**")
-                    st.write(f"Cosine similarity of {cosine_similarity:.3f} suggests limited convergence.")
+                    st.write(f"Cosine similarity of {safe_format_similarity(cosine_similarity)} suggests limited convergence.")
             
             # Display overview chart
-            st.subheader("📊 Entropy vs Temperature")
             if 'critical_temperature' in simulation_results:
                 fig = plot_entropy_vs_temperature(simulation_results)
                 st.plotly_chart(fig, use_container_width=True, key="overview_entropy_chart")
@@ -621,21 +792,22 @@ def render_overview_tab(concept: str,
             st.info("Run a simulation to see insights and visualizations.")
         
         # Display methodology
-        with st.expander("🔬 Methodology", expanded=False):
+        with st.expander("Methodology", expanded=False):
             st.markdown("""
             **Semantic Ising Model:**
             
-            1. **Embedding Generation**: Multilingual embeddings for the target concept
-            2. **Ising Dynamics**: Temperature-dependent vector updates using Metropolis/Glauber rules
+            1. **Embedding Generation**: Multilingual embeddings for the target concept using LaBSE
+            2. **Ising Dynamics**: Temperature-dependent vector updates using Metropolis/Glauber rules with k-NN constraints
             3. **Phase Detection**: Critical temperature detection using log(ξ) derivative method (knee in correlation length)
-            4. **Convergence Analysis**: Convergence Summary Across Temperatures & Entropy vs Correlation Length
-            5. **Comparison Analysis**: Anchor language comparison using cosine distance and similarity
+            4. **Clustering Analysis**: Ising-compatible clustering with adaptive, temperature-dependent thresholds
+            5. **Anchor Comparison**: Anchor language comparison using cosine distance and similarity at critical temperature
             
             **Key Metrics:**
-            - **Alignment**: Average cosine similarity between vectors
-            - **Correlation Length**: Characteristic length scale of correlations
+            - **Alignment**: Average cosine similarity between vectors (0-1, higher is better)
+            - **Correlation Length**: Characteristic length scale of correlations (phase transition indicator)
             - **Cosine Distance**: Primary semantic distance metric for anchor comparison (0-1, lower is better)
             - **Cosine Similarity**: Directional similarity for anchor comparison (0-1, higher is better)
+            - **Critical Temperature (Tc)**: Temperature where semantic phase transition occurs
             """)
         
     except Exception as e:

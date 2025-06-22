@@ -7,8 +7,9 @@ import os
 # Import the functions we'll implement
 from core.simulation import (
     run_temperature_sweep, simulate_at_temperature, update_vectors_ising,
-    update_vectors_metropolis, update_vectors_glauber, collect_metrics,
-    compute_alignment, compute_entropy
+    update_vectors_metropolis_knn, update_vectors_glauber_knn, collect_metrics,
+    compute_alignment, compute_entropy, compute_correlation_length,
+    compute_correlation_matrix, build_knn_graph
 )
 from core.physics import total_system_energy
 
@@ -158,10 +159,10 @@ class TestSimulation:
     def test_update_vectors_metropolis_acceptance(self):
         """Test Metropolis update acceptance criterion"""
         # Test at low temperature (high acceptance)
-        updated_low_T = update_vectors_metropolis(self.test_vectors, 0.1, J=1.0)
+        updated_low_T = update_vectors_metropolis_knn(self.test_vectors, 0.1, J=1.0)
         
         # Test at high temperature (lower acceptance)
-        updated_high_T = update_vectors_metropolis(self.test_vectors, 5.0, J=1.0)
+        updated_high_T = update_vectors_metropolis_knn(self.test_vectors, 5.0, J=1.0)
         
         # Both should be normalized
         assert np.allclose(np.linalg.norm(updated_low_T, axis=1), 1.0)
@@ -170,7 +171,7 @@ class TestSimulation:
     def test_update_vectors_glauber_probability(self):
         """Test Glauber update probability calculation"""
         # Test with strong field (should align)
-        updated_vectors = update_vectors_glauber(self.test_vectors, 0.1, J=1.0)
+        updated_vectors = update_vectors_glauber_knn(self.test_vectors, 0.1, J=1.0)
         
         assert updated_vectors.shape == self.test_vectors.shape
         assert np.allclose(np.linalg.norm(updated_vectors, axis=1), 1.0)  # Normalized
@@ -237,7 +238,7 @@ class TestSimulation:
         assert not np.isnan(energy)
         
         # Energy should be consistent with Metropolis updates
-        updated_vectors = update_vectors_metropolis(self.test_vectors, 1.0, J=1.0)
+        updated_vectors = update_vectors_metropolis_knn(self.test_vectors, 1.0, J=1.0)
         updated_energy = total_system_energy(updated_vectors, J=1.0)
         
         # Energies should be finite

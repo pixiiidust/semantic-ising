@@ -7,13 +7,18 @@ Ising updates, metrics collection, and convergence handling.
 
 import numpy as np
 import logging
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 from core.physics import total_system_energy
 from scipy.optimize import curve_fit
 from core.clustering import cluster_vectors
 import os
 import hashlib
 import pickle
+from sklearn.metrics.pairwise import cosine_similarity
+import matplotlib.pyplot as plt
+import seaborn as sns
+import time
+import glob
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -46,7 +51,7 @@ def _get_snapshot_directory(concept: str, encoder: str, anchor_language: str, in
 def _save_snapshot_to_disk(snapshot_dir: str, temperature: float, vectors: np.ndarray, 
                           languages: List[str], metadata: Dict[str, Any]) -> None:
     """
-    Save a vector snapshot to disk.
+    Save a vector snapshot to disk using NumPy-compatible serialization.
     
     Args:
         snapshot_dir: Directory to save the snapshot
@@ -57,74 +62,109 @@ def _save_snapshot_to_disk(snapshot_dir: str, temperature: float, vectors: np.nd
     """
     try:
         # Create filename with temperature
-        filename = f"snapshot_T{temperature:.6f}.pkl"
-        filepath = os.path.join(snapshot_dir, filename)
+        base_filename = f"snapshot_T{temperature:.6f}"
+        pkl_filepath = os.path.join(snapshot_dir, f"{base_filename}.pkl")
+        npy_filepath = os.path.join(snapshot_dir, f"{base_filename}_vectors.npy")
         
-        # Prepare data for saving
-        snapshot_data = {
+        # Save vectors using numpy.save (NumPy-compatible)
+        np.save(npy_filepath, vectors)
+        
+        # Save metadata using pickle (without vectors)
+        snapshot_metadata = {
             'temperature': temperature,
-            'vectors': vectors,
             'languages': languages,
-            'metadata': metadata
+            'metadata': metadata,
+            'vectors_file': f"{base_filename}_vectors.npy"  # Reference to vectors file
         }
         
-        # Save to disk
-        with open(filepath, 'wb') as f:
-            pickle.dump(snapshot_data, f)
+        with open(pkl_filepath, 'wb') as f:
+            pickle.dump(snapshot_metadata, f)
         
-        logger.info(f"Saved snapshot to {filepath}")
+        logger.info(f"Saved snapshot to {pkl_filepath} and vectors to {npy_filepath}")
         
     except Exception as e:
         logger.error(f"Failed to save snapshot at T={temperature}: {e}")
 
 
-def _load_snapshot_from_disk(snapshot_dir: str, temperature: float) -> Dict[str, Any]:
+def _load_snapshot_from_disk(snapshot_dir: str, temperature: float) -> Optional[Dict[str, Any]]:
     """
-    Load a vector snapshot from disk.
+    Load snapshot from disk with NumPy version compatibility handling.
     
     Args:
         snapshot_dir: Directory containing snapshots
         temperature: Temperature to load
         
     Returns:
-        Dictionary containing snapshot data or None if not found
+        Snapshot data or None if loading fails
     """
     try:
-        # Find the closest snapshot file
-        if not os.path.exists(snapshot_dir):
-            return None
-            
-        snapshot_files = [f for f in os.listdir(snapshot_dir) if f.startswith("snapshot_T") and f.endswith(".pkl")]
-        
+        # Find the closest temperature file
+        snapshot_files = glob.glob(os.path.join(snapshot_dir, "snapshot_T*.pkl"))
         if not snapshot_files:
+            logger.warning(f"No snapshot files found in {snapshot_dir}")
             return None
         
         # Extract temperatures from filenames
-        available_temps = []
-        for filename in snapshot_files:
+        temp_files = []
+        for file in snapshot_files:
             try:
-                temp_str = filename.replace("snapshot_T", "").replace(".pkl", "")
-                temp = float(temp_str)
-                available_temps.append((temp, filename))
+                # Extract temperature from filename like "snapshot_T1.234.pkl"
+                temp_str = os.path.basename(file).replace("snapshot_T", "").replace(".pkl", "")
+                temp_val = float(temp_str)
+                temp_files.append((temp_val, file))
             except ValueError:
                 continue
         
-        if not available_temps:
+        if not temp_files:
+            logger.warning(f"No valid temperature files found in {snapshot_dir}")
             return None
         
         # Find closest temperature
-        closest_temp, closest_filename = min(available_temps, key=lambda x: abs(x[0] - temperature))
+        closest_temp, closest_file = min(temp_files, key=lambda x: abs(x[0] - temperature))
         
-        # Load the snapshot
-        filepath = os.path.join(snapshot_dir, closest_filename)
-        with open(filepath, 'rb') as f:
-            snapshot_data = pickle.load(f)
-        
-        logger.info(f"Loaded snapshot from {filepath} (requested T={temperature:.3f}, found T={closest_temp:.3f})")
-        return snapshot_data
-        
+        # Try to load the snapshot with NumPy-compatible method
+        try:
+            with open(closest_file, 'rb') as f:
+                # Load metadata from pickle
+                snapshot_data = pickle.load(f)
+                
+                # Load vectors from separate .npy file
+                if isinstance(snapshot_data, dict) and 'vectors_file' in snapshot_data:
+                    vectors_file = os.path.join(snapshot_dir, snapshot_data['vectors_file'])
+                    if os.path.exists(vectors_file):
+                        vectors = np.load(vectors_file)
+                        snapshot_data['vectors'] = vectors
+                        logger.info(f"Successfully loaded snapshot from {closest_file} with vectors from {vectors_file}")
+                    else:
+                        logger.warning(f"Vectors file {vectors_file} not found")
+                        return None
+                else:
+                    # Fallback: try to load old format
+                    logger.warning(f"Old snapshot format detected in {closest_file}")
+                    return None
+            
+            # Validate snapshot data
+            if isinstance(snapshot_data, dict) and 'vectors' in snapshot_data and 'languages' in snapshot_data:
+                return snapshot_data
+            else:
+                logger.warning(f"Invalid snapshot format in {closest_file}")
+                return None
+                
+        except (ModuleNotFoundError, ImportError) as e:
+            if "numpy._core" in str(e):
+                logger.error(f"NumPy version incompatibility when loading snapshot at T={closest_temp}: {e}")
+                logger.error("This indicates snapshots were saved with a different NumPy version")
+                logger.error("Please re-run the simulation to generate compatible snapshots")
+                return None
+            else:
+                logger.error(f"Import error loading snapshot: {e}")
+                return None
+        except Exception as e:
+            logger.error(f"Error loading snapshot from {closest_file}: {e}")
+            return None
+            
     except Exception as e:
-        logger.error(f"Failed to load snapshot at T={temperature}: {e}")
+        logger.error(f"Error in _load_snapshot_from_disk: {e}")
         return None
 
 
@@ -296,8 +336,42 @@ def _run_single_temperature_sweep(
     include_anchor: bool = None,
     languages: List[str] = None
 ) -> Dict[str, np.ndarray]:
-    """Run single temperature sweep (internal function)"""
-    # Initialize lists to store ALL results (including diverging ones)
+    """
+    Run a single temperature sweep with k-NN constraints.
+    
+    Args:
+        vectors: Initial vectors array
+        T_range: List of temperatures to simulate
+        store_all_temperatures: Whether to store vectors at all temperatures
+        max_snapshots: Maximum number of snapshots to store
+        n_sweeps_per_temperature: Number of sweeps per temperature
+        sim_params: Simulation parameters
+        progress_callback: Progress callback function
+        snapshot_dir: Directory for disk-based snapshot storage
+        concept: Concept name for metadata
+        encoder: Encoder name for metadata
+        anchor_language: Anchor language code
+        include_anchor: Whether anchor is included in dynamics
+        languages: List of language codes
+        
+    Returns:
+        Dictionary containing simulation results
+    """
+    # Ensure vectors are normalized
+    vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+    
+    # Create diagnostic similarity matrix
+    if languages:
+        heatmap_path = create_similarity_matrix_heatmap(vectors, languages)
+        if heatmap_path:
+            logger.info(f"Diagnostic similarity matrix created: {heatmap_path}")
+    
+    # Get k-NN parameter from sim_params
+    k = sim_params.get('k_neighbors', 8) if sim_params else 8
+    logger.info(f"Using k-NN constraint with k={k}")
+    
+    # Initialize tracking variables
+    current_vectors = vectors.copy()
     all_temperatures = []
     all_metrics = {
         'alignment': [],
@@ -306,110 +380,85 @@ def _run_single_temperature_sweep(
         'correlation_length': [],
         'alignment_ensemble': []
     }
-    
-    # Store convergence information for each temperature
     convergence_data = []
-    
-    vector_snapshots = {} if store_all_temperatures else None
-    
-    # Create default language labels based on vector count
-    languages = languages or [f'Lang_{i}' for i in range(len(vectors))]
-    
-    # Memory management: store only selected temperatures
-    snapshot_indices = []  # Initialize empty list
-    if store_all_temperatures:
-        # Store snapshots at regular intervals or key temperatures
-        snapshot_indices = np.linspace(0, len(T_range)-1, min(max_snapshots, len(T_range)), dtype=int)
-        print(f"[DEBUG] store_all_temperatures={store_all_temperatures}, max_snapshots={max_snapshots}")
-        print(f"[DEBUG] snapshot_indices={snapshot_indices}")
-        print(f"[DEBUG] snapshot_dir={snapshot_dir}")
-    
-    # Extract simulation parameters with defaults
-    if sim_params is None:
-        sim_params = {}
-    
-    max_iter = _ensure_float(sim_params.get('max_iterations', 6000), 'max_iterations', 6000)
-    convergence_threshold = _ensure_float(sim_params.get('convergence_threshold', 3e-3), 'convergence_threshold', 3e-3)
-    noise_sigma = _ensure_float(sim_params.get('noise_sigma', 0.04), 'noise_sigma', 0.04)
-    update_method = sim_params.get('update_method', 'metropolis')
-    
-    # Add per-temperature cluster statistics
     cluster_stats_per_temperature = []
     
+    # Determine snapshot indices
+    if store_all_temperatures:
+        n_steps = len(T_range)
+        if n_steps <= max_snapshots:
+            snapshot_indices = np.arange(n_steps)
+        else:
+            # Sample evenly across the range
+            snapshot_indices = np.linspace(0, n_steps - 1, max_snapshots, dtype=int)
+        
+        logger.info(f"store_all_temperatures=True, max_snapshots={max_snapshots}")
+        logger.info(f"snapshot_indices={snapshot_indices}")
+        logger.info(f"snapshot_dir={snapshot_dir}")
+    
+    # Initialize vector snapshots for memory storage (fallback)
+    vector_snapshots = {}
+    
+    # Run temperature sweep
     for i, T in enumerate(T_range):
-        # Report progress if callback is provided
-        if progress_callback is not None:
-            progress = (i / len(T_range)) * 100
-            progress_callback(progress, f"Processing temperature {T:.3f} ({i+1}/{len(T_range)})")
-        
-        # Always record this temperature
-        all_temperatures.append(T)
-        
         try:
-            # Run multiple sweeps to build ensemble statistics
-            alignment_sweeps = []
+            all_temperatures.append(T)
+            
+            # Update progress
+            if progress_callback is not None:
+                progress_percent = (i / len(T_range)) * 100
+                progress_callback(progress_percent, f"Simulating at T={T:.3f}")
+            
+            # Run multiple sweeps at this temperature
             convergence_infos = []
-            current_vectors = vectors.copy()
+            initial_vectors = current_vectors.copy()  # Store initial state
             
             for sweep in range(n_sweeps_per_temperature):
-                # Only log convergence warnings for the first sweep
-                if sweep == 0:
-                    T_metrics, current_vectors, convergence_info = simulate_at_temperature(
-                        current_vectors, T,
-                        max_iter=max_iter,
-                        convergence_threshold=convergence_threshold,
-                        noise_sigma=noise_sigma,
-                        update_method=update_method
-                    )
-                else:
-                    # For subsequent sweeps, suppress warnings
-                    import logging
-                    original_level = logger.level
-                    logger.setLevel(logging.ERROR)  # Suppress warnings
-                    try:
-                        T_metrics, current_vectors, convergence_info = simulate_at_temperature(
-                            current_vectors, T,
-                            max_iter=max_iter,
-                            convergence_threshold=convergence_threshold,
-                            noise_sigma=noise_sigma,
-                            update_method=update_method
-                        )
-                    finally:
-                        logger.setLevel(original_level)  # Restore logging level
+                # Apply k-NN constrained Ising updates
+                current_vectors = update_vectors_ising(
+                    current_vectors, 
+                    T, 
+                    update_method=sim_params.get('update_method', 'metropolis') if sim_params else 'metropolis',
+                    noise_sigma=sim_params.get('noise_sigma', 0.04) if sim_params else 0.04,
+                    k=k  # Use k-NN constraint
+                )
                 
-                alignment_sweeps.append(T_metrics['alignment'])
-                convergence_infos.append(convergence_info)
+                # Compute convergence info for this sweep
+                if sweep == n_sweeps_per_temperature - 1:  # Only on final sweep
+                    # Calculate actual final difference from initial state
+                    final_diff = np.linalg.norm(current_vectors - initial_vectors) / np.linalg.norm(initial_vectors)
+                    
+                    convergence_info = {
+                        'sweep': sweep + 1,
+                        'temperature': T,
+                        'final_diff': final_diff,  # Actual computed difference
+                        'iterations': sweep + 1,
+                        'status': 'completed'
+                    }
+                    convergence_infos.append(convergence_info)
             
-            # Check if the simulation converged or reached a stable plateau
-            final_status = convergence_infos[-1]['status']
+            # Compute final metrics for this temperature
+            T_metrics = collect_metrics(current_vectors, T)
             
-            # Always store ensemble of alignment values
-            all_metrics['alignment_ensemble'].append(np.array(alignment_sweeps))
+            # Determine convergence status
+            final_status = 'plateau'  # Default status for k-NN constrained dynamics
             
-            # For diverging or error status, use NaN for metrics but keep the row
-            if final_status in ['diverging', 'error']:
-                logger.warning(f"⚠️ {final_status} at T={T:.3f} (diff={convergence_infos[-1]['final_diff']:.2e})")
-                # Store NaN for metrics that can't be trusted
-                for key in ['alignment', 'entropy', 'energy', 'correlation_length']:
-                    all_metrics[key].append(np.nan)
-            else:
-                # For plateau status, use soft convergence - treat as valid but with reduced alignment
-                if final_status == 'plateau':
-                    logger.info(f"High-T plateau at T={T:.3f} - using soft convergence")
-                    # Reduce alignment for plateau temperatures to indicate lack of ordering
-                    T_metrics['alignment'] = max(0.0, T_metrics['alignment'] * 0.1)
-                
-                # Use final sweep metrics for other measurements
-                for key in ['alignment', 'entropy', 'energy', 'correlation_length']:
-                    all_metrics[key].append(T_metrics[key])
+            # Store metrics
+            all_metrics['alignment'].append(T_metrics['alignment'])
+            all_metrics['entropy'].append(T_metrics['entropy'])
+            all_metrics['energy'].append(T_metrics['energy'])
+            all_metrics['correlation_length'].append(T_metrics['correlation_length'])
+            
+            # Store ensemble data for alignment
+            all_metrics['alignment_ensemble'].append(np.array([T_metrics['alignment']]))
             
             # Store convergence data for this temperature
             convergence_data.append({
                 'temperature': T,
                 'convergence_infos': convergence_infos,
-                'final_diff': convergence_infos[-1]['final_diff'],
+                'final_diff': convergence_infos[-1]['final_diff'] if convergence_infos else 0.0,
                 'status': final_status,
-                'iterations': convergence_infos[-1]['iterations']
+                'iterations': convergence_infos[-1]['iterations'] if convergence_infos else n_sweeps_per_temperature
             })
             
             # Store vectors only at selected temperatures (if converged or plateau)
@@ -426,14 +475,13 @@ def _run_single_temperature_sweep(
                             'anchor_language': anchor_language,
                             'include_anchor': include_anchor,
                             'final_status': final_status,
-                            'temperature': T
+                            'temperature': T,
+                            'k_neighbors': k  # Store k-NN parameter
                         }
                         _save_snapshot_to_disk(snapshot_dir, T, snapshot_vectors, languages, metadata)
                         print(f"[DEBUG] Saved snapshot to disk at T={T:.3f}, status={final_status}, index={i}")
                     else:
                         # Fallback to memory storage
-                        if 'vector_snapshots' not in locals():
-                            vector_snapshots = {}
                         vector_snapshots[T] = snapshot_vectors
                         print(f"[DEBUG] Stored snapshot in memory at T={T:.3f}, status={final_status}, index={i}")
                 except Exception as e:
@@ -443,15 +491,10 @@ def _run_single_temperature_sweep(
             elif store_all_temperatures:
                 print(f"[DEBUG] Index {i} not in snapshot_indices {snapshot_indices}")
             
-            # (after all Ising updates and before memory cleanup)
-            # Cluster the vectors at this temperature (use final current_vectors)
-            # Use temperature-dependent clustering threshold
+            # Cluster analysis at this temperature
             base_threshold = sim_params.get('similarity_threshold', 0.8) if sim_params else 0.8
-            
-            # Adjust threshold based on temperature: higher T = higher threshold
-            # This ensures fewer clusters at high T (more independent) and more clusters at low T (more aligned)
-            temp_factor = min(1.0, max(0.5, T / 2.0))  # Scale factor between 0.5 and 1.0
-            similarity_threshold = base_threshold + (0.15 * temp_factor)  # Range: 0.8 to 0.95
+            temp_factor = min(1.0, max(0.5, T / 2.0))
+            similarity_threshold = base_threshold + (0.15 * temp_factor)
             
             clusters = cluster_vectors(current_vectors, threshold=similarity_threshold)
             cluster_sizes = [len(cluster) for cluster in clusters]
@@ -459,7 +502,8 @@ def _run_single_temperature_sweep(
                 'temperature': T,
                 'n_clusters': len(clusters),
                 'cluster_sizes': cluster_sizes,
-                'clustering_threshold': similarity_threshold  # Store the actual threshold used
+                'clustering_threshold': similarity_threshold,
+                'k_neighbors': k  # Store k-NN parameter
             })
             
             # Clear memory periodically
@@ -491,6 +535,7 @@ def _run_single_temperature_sweep(
         **{k: np.array(v) for k, v in all_metrics.items()},
         'convergence_data': convergence_data,
         'cluster_stats_per_temperature': cluster_stats_per_temperature,
+        'k_neighbors': k  # Store k-NN parameter in results
     }
     
     if store_all_temperatures:
@@ -666,149 +711,247 @@ def simulate_at_temperature(
     return metrics, current_vectors, convergence_info
 
 
+def create_similarity_matrix_heatmap(vectors: np.ndarray, languages: List[str] = None) -> str:
+    """
+    Create a diagnostic similarity matrix heatmap for debugging embedding issues.
+    
+    Args:
+        vectors: Array of shape (n_vectors, dim) containing normalized vectors
+        languages: List of language codes for labeling
+        
+    Returns:
+        Path to saved heatmap image
+    """
+    try:
+        # Ensure vectors are normalized
+        vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+        
+        # Compute cosine similarity matrix
+        similarity_matrix = cosine_similarity(vectors)
+        
+        # Create figure
+        plt.figure(figsize=(10, 8))
+        
+        # Create heatmap
+        if languages:
+            # Use language labels
+            sns.heatmap(
+                similarity_matrix, 
+                cmap="coolwarm", 
+                center=0,
+                xticklabels=languages,
+                yticklabels=languages,
+                annot=True,
+                fmt='.2f',
+                square=True
+            )
+        else:
+            # Use numeric indices
+            sns.heatmap(
+                similarity_matrix, 
+                cmap="coolwarm", 
+                center=0,
+                annot=True,
+                fmt='.2f',
+                square=True
+            )
+        
+        plt.title("Initial Cosine Similarity Matrix")
+        plt.tight_layout()
+        
+        # Save to file
+        output_dir = "data/diagnostics"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        filename = f"similarity_matrix_{timestamp}.png"
+        filepath = os.path.join(output_dir, filename)
+        
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        logger.info(f"Similarity matrix heatmap saved to: {filepath}")
+        return filepath
+        
+    except Exception as e:
+        logger.error(f"Error creating similarity matrix heatmap: {e}")
+        return None
+
+
+def build_knn_graph(vectors: np.ndarray, k: int = 8) -> Dict[int, List[int]]:
+    """
+    Build k-nearest neighbor graph for vectors.
+    
+    Args:
+        vectors: Array of shape (n_vectors, dim) containing normalized vectors
+        k: Number of nearest neighbors to connect (default: 8)
+        
+    Returns:
+        Dictionary mapping vector index to list of neighbor indices
+    """
+    # Ensure vectors are normalized
+    vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+    
+    # Compute cosine similarity matrix
+    similarity_matrix = cosine_similarity(vectors)
+    
+    # Set diagonal to -1 to exclude self
+    np.fill_diagonal(similarity_matrix, -1)
+    
+    # Find k nearest neighbors for each vector
+    knn_graph = {}
+    for i in range(len(vectors)):
+        # Get indices of top k most similar vectors
+        neighbors = np.argsort(similarity_matrix[i])[-k:]
+        knn_graph[i] = neighbors.tolist()
+    
+    return knn_graph
+
+
 def update_vectors_ising(
     vectors: np.ndarray, 
     T: float, 
     J: float = 1.0, 
     update_method: str = "metropolis",
-    noise_sigma: float = 0.04
+    noise_sigma: float = 0.04,
+    k: int = 8
 ) -> np.ndarray:
     """
-    Update vectors using specified Ising update rule.
+    Apply Ising-style update logic with k-NN constraints.
     
     Args:
         vectors: Array of shape (n_vectors, dim) containing normalized vectors
         T: Temperature parameter
-        J: Coupling strength parameter
+        J: Coupling strength (default: 1.0)
         update_method: Update method ("metropolis" or "glauber")
-        noise_sigma: Standard deviation of noise for Metropolis updates
-    
+        noise_sigma: Standard deviation of noise for Metropolis updates (default: 0.04)
+        k: Number of nearest neighbors for k-NN constraint (default: 8)
+        
     Returns:
-        Updated normalized vectors
-    
-    Raises:
-        ValueError: If update method is unknown
+        Updated vectors array
     """
-    # Ensure numeric parameters are floats
-    T = _ensure_float(T, 'T')
-    J = _ensure_float(J, 'J', 1.0)
-    noise_sigma = _ensure_float(noise_sigma, 'noise_sigma', 0.04)
+    # Ensure vectors are normalized
+    vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
     
+    # Build k-NN graph
+    knn_graph = build_knn_graph(vectors, k=k)
+    
+    # Apply updates based on method
     if update_method == "metropolis":
-        return update_vectors_metropolis(vectors, T, J, noise_sigma)
+        return update_vectors_metropolis_knn(vectors, T, J, noise_sigma, knn_graph)
     elif update_method == "glauber":
-        return update_vectors_glauber(vectors, T, J)
+        return update_vectors_glauber_knn(vectors, T, J, knn_graph)
     else:
         raise ValueError(f"Unknown update method: {update_method}")
 
 
-def update_vectors_metropolis(vectors: np.ndarray, T: float, J: float = 1.0, noise_sigma: float = 0.04) -> np.ndarray:
+def update_vectors_metropolis_knn(
+    vectors: np.ndarray, 
+    T: float, 
+    J: float = 1.0, 
+    noise_sigma: float = 0.04,
+    knn_graph: Dict[int, List[int]] = None
+) -> np.ndarray:
     """
-    Metropolis update rule for semantic Ising model.
+    Apply Metropolis update with k-NN constraints.
     
     Args:
         vectors: Array of shape (n_vectors, dim) containing normalized vectors
         T: Temperature parameter
-        J: Coupling strength parameter
-        noise_sigma: Standard deviation of noise for Metropolis updates
-    
+        J: Coupling strength
+        noise_sigma: Standard deviation of noise
+        knn_graph: k-NN graph mapping vector index to neighbor indices
+        
     Returns:
-        Updated vectors using Metropolis acceptance criterion
+        Updated vectors array
     """
-    # Ensure numeric parameters are floats
-    T = _ensure_float(T, 'T')
-    J = _ensure_float(J, 'J', 1.0)
-    noise_sigma = _ensure_float(noise_sigma, 'noise_sigma', 0.04)
+    if knn_graph is None:
+        knn_graph = build_knn_graph(vectors, k=8)
     
-    n_vectors, dim = vectors.shape
-    new_vectors = vectors.copy()
+    n_vectors = len(vectors)
+    updated_vectors = vectors.copy()
     
-    # Vectorized computation of similarity matrix for efficiency
-    norms = np.linalg.norm(vectors, axis=1, keepdims=True)
-    # Avoid division by zero if a vector is all zeros
-    norms[norms == 0] = 1
-    normalized_vectors = vectors / norms
-    similarity_matrix = np.dot(normalized_vectors, normalized_vectors.T)
-    
-    # Pre-compute all local fields. This includes self-interaction, which is subtracted later.
-    local_field_matrix = J * np.dot(similarity_matrix, vectors)
-
     for i in range(n_vectors):
-        # Look up the pre-computed local field and subtract the self-interaction term.
-        # The self-interaction term is J * similarity(i,i) * vector[i]. Since sim(i,i) is 1, this is J * vectors[i].
-        local_field = local_field_matrix[i] - J * vectors[i]
+        # Get current vector and its neighbors
+        current_vector = vectors[i]
+        neighbors = knn_graph[i]
         
-        # Propose new vector (small random perturbation)
-        noise = np.random.normal(0, noise_sigma, dim)
-        proposed_vector = vectors[i] + noise
-        proposed_vector /= np.linalg.norm(proposed_vector) # Normalize the proposed vector
+        # Compute current energy (interaction with neighbors only)
+        current_energy = 0.0
+        for neighbor_idx in neighbors:
+            neighbor_vector = vectors[neighbor_idx]
+            # Cosine similarity (dot product for normalized vectors)
+            similarity = np.dot(current_vector, neighbor_vector)
+            current_energy -= J * similarity
         
-        # Compute energy change using consistent Hamiltonian
-        # delta_E = E_new - E_old
-        # E_i = -dot(vector_i, local_field_i), where local_field is based on all other vectors
-        delta_E = -np.dot(proposed_vector, local_field) + np.dot(vectors[i], local_field)
+        # Propose new vector with noise
+        noise = np.random.normal(0, noise_sigma, current_vector.shape)
+        proposed_vector = current_vector + noise
+        proposed_vector = proposed_vector / np.linalg.norm(proposed_vector)
+        
+        # Compute proposed energy
+        proposed_energy = 0.0
+        for neighbor_idx in neighbors:
+            neighbor_vector = vectors[neighbor_idx]
+            similarity = np.dot(proposed_vector, neighbor_vector)
+            proposed_energy -= J * similarity
         
         # Metropolis acceptance criterion
-        if delta_E <= 0 or np.random.rand() < np.exp(-delta_E / T):
-            new_vectors[i] = proposed_vector
-            # After accepting a move, we should update the local field matrix for subsequent calculations in the same sweep
-            # For simplicity and to maintain vectorization benefits, we will proceed without intra-sweep updates,
-            # which is a common approach. Re-evaluate if convergence is impacted.
-
-    # Global normalization after each sweep to prevent spin-length drift
-    new_vectors = new_vectors / np.linalg.norm(new_vectors, axis=1, keepdims=True)
-    return new_vectors
+        energy_diff = proposed_energy - current_energy
+        if energy_diff <= 0 or np.random.random() < np.exp(-energy_diff / T):
+            updated_vectors[i] = proposed_vector
+    
+    return updated_vectors
 
 
-def update_vectors_glauber(vectors: np.ndarray, T: float, J: float = 1.0) -> np.ndarray:
+def update_vectors_glauber_knn(
+    vectors: np.ndarray, 
+    T: float, 
+    J: float = 1.0,
+    knn_graph: Dict[int, List[int]] = None
+) -> np.ndarray:
     """
-    Glauber (heat-bath) update rule for semantic Ising model.
+    Apply Glauber update with k-NN constraints.
     
     Args:
         vectors: Array of shape (n_vectors, dim) containing normalized vectors
         T: Temperature parameter
-        J: Coupling strength parameter
-    
+        J: Coupling strength
+        knn_graph: k-NN graph mapping vector index to neighbor indices
+        
     Returns:
-        Updated vectors using heat-bath probability
+        Updated vectors array
     """
-    # Ensure numeric parameters are floats
-    T = _ensure_float(T, 'T')
-    J = _ensure_float(J, 'J', 1.0)
+    if knn_graph is None:
+        knn_graph = build_knn_graph(vectors, k=8)
     
-    n_vectors, dim = vectors.shape
-    new_vectors = vectors.copy()
+    n_vectors = len(vectors)
+    updated_vectors = vectors.copy()
     
     for i in range(n_vectors):
-        # Compute local field
-        local_field = np.zeros(dim)
-        for j in range(n_vectors):
-            if i != j:
-                similarity = np.dot(vectors[i], vectors[j]) / (np.linalg.norm(vectors[i]) * np.linalg.norm(vectors[j]))
-                local_field += J * similarity * vectors[j]
+        # Get current vector and its neighbors
+        current_vector = vectors[i]
+        neighbors = knn_graph[i]
         
-        # Heat-bath probability for Glauber dynamics
-        field_strength = np.linalg.norm(local_field)
+        # Compute local field from neighbors
+        local_field = np.zeros_like(current_vector)
+        for neighbor_idx in neighbors:
+            neighbor_vector = vectors[neighbor_idx]
+            local_field += J * neighbor_vector
         
-        if field_strength > 0:
-            field_direction = local_field / field_strength
-            
-            # Probability of aligning with field
-            p_align = 1.0 / (1.0 + np.exp(-2 * J * field_strength / T))
-            
-            # Update vector based on probability
-            if np.random.random() < p_align:
-                new_vectors[i] = field_direction
-            else:
-                new_vectors[i] = -field_direction
-        else:
-            # Random direction if no field
-            noise = np.random.normal(0, 1, dim)
-            new_vectors[i] = noise / np.linalg.norm(noise)
+        # Normalize local field
+        field_norm = np.linalg.norm(local_field)
+        if field_norm > 0:
+            local_field = local_field / field_norm
+        
+        # Glauber update: move towards local field with temperature-dependent strength
+        update_strength = 1.0 / (1.0 + T)  # Stronger updates at lower T
+        new_vector = (1 - update_strength) * current_vector + update_strength * local_field
+        new_vector = new_vector / np.linalg.norm(new_vector)
+        
+        updated_vectors[i] = new_vector
     
-    # Global normalization
-    new_vectors = new_vectors / np.linalg.norm(new_vectors, axis=1, keepdims=True)
-    return new_vectors
+    return updated_vectors
 
 
 def collect_metrics(vectors: np.ndarray, T: float) -> Dict[str, float]:
@@ -945,4 +1088,37 @@ def compute_correlation_length(vectors: np.ndarray) -> float:
             # Return a fallback value if fitting fails
             return 1.0
     
-    return np.nan 
+    return np.nan
+
+
+def compute_correlation_matrix(vectors: np.ndarray) -> np.ndarray:
+    """
+    Compute correlation matrix C_ij = cos(θ_ij) between normalized vectors
+    
+    Args:
+        vectors: Array of shape (n_vectors, dim) containing the vectors
+        
+    Returns:
+        Correlation matrix of shape (n_vectors, n_vectors)
+        
+    Raises:
+        ValueError: If vectors array is empty
+    """
+    if len(vectors) == 0:
+        raise ValueError("Empty vectors array")
+    
+    n = len(vectors)
+    
+    # Normalize vectors
+    normalized_vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+    
+    # Initialize correlation matrix
+    C_matrix = np.zeros((n, n))
+    
+    # Compute pairwise correlations
+    for i in range(n):
+        for j in range(n):
+            if i != j:  # Skip self-correlation
+                C_matrix[i, j] = np.dot(normalized_vectors[i], normalized_vectors[j])
+    
+    return C_matrix 

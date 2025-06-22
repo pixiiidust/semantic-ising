@@ -44,25 +44,19 @@ The UI modules provide an interactive web interface for the Semantic Ising Simul
 - Export functionality integration
 
 ### 📊 `charts.py`
-**Purpose**: Interactive chart generation using Plotly with enhanced UMAP visualization
+**Purpose**: Data visualization and plotting utilities
 
 **Key Functions**:
-- `plot_entropy_vs_temperature(simulation_results)` - Entropy vs temperature plot
-- `plot_full_umap_projection(simulation_results, analysis_results, anchor_language=None, zoom_factor=2.0)` - UMAP projection with zoom control
-- `plot_correlation_decay(analysis_results)` - Correlation decay plot
-- `plot_correlation_length_vs_temperature(simulation_results)` - Correlation length vs temperature
-- `plot_alignment_vs_temperature(simulation_results)` - Alignment vs temperature
-- `plot_energy_vs_temperature(simulation_results)` - Energy vs temperature
+- `plot_correlation_length(temperatures, correlation_lengths, tc)` - Correlation length visualization
+- `plot_umap_embedding(vectors, labels, title)` - UMAP dimensionality reduction plots
+- `plot_metrics_over_temperature(temperatures, metrics, tc)` - Temperature-dependent metrics
 
 **Features**:
-- Interactive Plotly charts with hover information
-- Critical temperature markers
-- Anchor language highlighting in UMAP
-- **UMAP zoom control**: Auto-scaling with configurable zoom factor (default 2.0× zoom out)
-- **Temperature slider integration**: Dynamic UMAP updates based on temperature selection
-- **Language code preservation**: Proper language labels (en, es, fr, etc.) in UMAP plots
-- Configurable styling and themes
-- Export functionality
+- **Critical temperature annotation**: Tc marked on all relevant plots
+- **Interactive UMAP**: Dynamic visualization with temperature slider
+- **Multi-panel layouts**: Comprehensive analysis views
+- **Language code preservation**: Actual language codes displayed (en, es, fr, etc.)
+- **Responsive design**: Adapts to different screen sizes
 
 ## 📑 Tabs
 
@@ -112,6 +106,9 @@ The UI modules provide an interactive web interface for the Semantic Ising Simul
 - **Pre-calculated metrics** for all temperatures to avoid real-time computation
 - **Language code preservation** in UMAP plots (en, es, fr, etc.)
 - **Export functionality** for results and visualizations
+- **Consistent metrics calculation**: Both main metrics and interactive metrics use original anchor vectors for comparison
+- **Disk-based recalculation**: Proper handling of disk-based snapshots when in-memory snapshots are not available
+- **Session state synchronization**: All UI components display consistent metrics by updating session state after recalculation
 
 ### 📋 `tabs/tabs.md`
 **Purpose**: Tab structure documentation
