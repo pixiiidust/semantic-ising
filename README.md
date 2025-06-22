@@ -44,6 +44,7 @@ For a deeper dive and visualizing the concepts behind this simulator, see the [S
 ### 🔬 Core Simulation
 - **Multilingual Support**: 70+ languages with LaBSE embeddings
 - **Ising Dynamics**: Metropolis/Glauber update rules with temperature sweeps
+- **K-Nearest Neighbors (KNN) Constraints**: Local connectivity constraints for more realistic semantic interactions
 - **Disk-based Snapshot Storage**: Persistent storage of simulation vectors at each temperature step
 
 ### 📊 Analysis & Visualization

@@ -48,7 +48,6 @@ semantic-ising/
 │   ├── embeddings.py     # Multilingual embedding pipeline
 │   ├── phase_detection.py # Critical temperature detection
 │   ├── post_analysis.py  # Post-simulation analysis
-│   ├── dynamics.py       # Ising dynamics implementation
 │   ├── physics.py        # Energy calculations
 │   ├── clustering.py     # Vector clustering
 │   ├── meta_vector.py    # Meta vector computation
@@ -188,6 +187,12 @@ Latest enhancements and improvements:
    - Physics-based color coding for flip behavior
    - Animated cluster boundaries in UMAP visualization
    - Interactive cluster evolution across temperature
+
+6. **K-Nearest Neighbors (KNN) Constraints**:
+   - Local connectivity constraints for more realistic semantic interactions
+   - KNN graph construction for vector update constraints
+   - Metropolis and Glauber updates with KNN constraints
+   - Improved semantic coherence through local neighborhood effects
 --]]
 
 return {
@@ -217,6 +222,9 @@ return {
           "update_vectors_ising",  -- Update rule dispatcher
           "update_vectors_metropolis",  -- Metropolis updates
           "update_vectors_glauber",  -- Heat-bath updates
+          "update_vectors_metropolis_knn",  -- Metropolis updates with KNN constraints
+          "update_vectors_glauber_knn",  -- Glauber updates with KNN constraints
+          "build_knn_graph",  -- Build k-nearest neighbors graph
           "collect_metrics",  -- Metric collection
           "compute_alignment",  -- Alignment calculation
           "compute_entropy",  -- Entropy calculation
@@ -224,8 +232,8 @@ return {
           "_load_snapshot_from_disk",  -- Load snapshots from disk
           "_get_available_snapshot_temperatures"  -- Get available snapshot temperatures
         },
-        depends_on = {"dynamics.py", "physics.py"},
-        produces = {"temperature_metrics", "vector_snapshots", "snapshot_directory"}
+        depends_on = {"physics.py"},
+        produces = {"temperature_metrics", "vector_snapshots", "snapshot_directory", "knn_graph"}
       },
       
       ["embeddings.py"] = {
@@ -235,12 +243,6 @@ return {
           "cache_embeddings"  -- Store with validation
         },
         produces = {"embeddings_array", "language_list", "cache_filepath"}
-      },
-
-      ["dynamics.py"] = {
-        functions = {"total_system_energy"},
-        purpose = "Energy calculation with consistent Hamiltonian",
-        produces = {"energy_value"}
       },
 
       ["phase_detection.py"] = {
@@ -413,6 +415,11 @@ return {
         test_prefix = "T10",
         depends_on = {"ui/charts.py", "core/clustering.py"},
         status = "DEVELOPING"
+      },
+      ["test_simulation_knn.py"] = {
+        purpose = "K-nearest neighbors simulation tests",
+        test_prefix = "T11",
+        depends_on = {"core/simulation.py"}
       }
     },
     status = "COMPLETE"
