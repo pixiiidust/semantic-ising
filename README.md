@@ -1,8 +1,9 @@
 # Semantic Ising Simulator (Alpha Ver.)
 
 A multilingual semantic Ising model simulator that: 
-1. Explores how semantically identical words across languages potentially converge in their embedding space (under Ising dynamics). 
+1. Explores how semantically identical words across languages map across their embedding space (under Ising dynamics). 
 2. Visualizes multilingual alignments to reveal latent structure as the system approaches a critical threshold.
+3. Captures tipping points at critical temperature which may potentially indicate emergence of a universal concept space.
 
 ---
 
@@ -26,7 +27,7 @@ A multilingual semantic Ising model simulator that:
 
 Do words meaning "dog" in 70+ languages share a common latent semantic structure? 
 * Using Ising model dynamics, we simulate semantic phase transitions by detecting critical temperatures
-* Critical temperatures denote alignment thresholds for embedded multilingual spaces, where universal semantic patterns may emerge
+* Critical temperatures denote alignment thresholds for embedded multilingual spaces, a *tipping point* where universal semantic patterns may emerge
 * This speculative approach is inspired by the **Platonic representation hypothesis** 
 
 **Key Research Questions:**
@@ -60,12 +61,15 @@ For a deeper dive and visualizing the concepts behind this simulator, see the [S
 ## 📸 Screenshots
 
 ### Visualize multilingual mappings (Updated with clustering)   
+
 <img src="https://github.com/user-attachments/assets/90fda98e-9f60-4f75-8357-06980d1cb781"/>
 
-### Map structural thresholds
+### Map structural thresholds -- tipping points where universal patterns begin emerging
+
 <img src="https://github.com/user-attachments/assets/85a264ba-30c7-4302-8a32-c4f0ec862469"/>
 
 ### Dashboard Configuration Sidebar (Updated with Settings for Advanced Users)  
+
 <img src="https://github.com/user-attachments/assets/bdd894d4-092f-45d8-bb1e-28ce482032bd"/>
 
 ---
